@@ -3,14 +3,18 @@ import { motion } from "framer-motion";
 import { FaCoins, FaAward } from "react-icons/fa";
 
 export default function RoundEndModal({ stats, myId, players, onNextRound }) {
-  if (!stats) return null;
+  // TRAVA DE SEGURANÇA MÁXIMA: Só avança se os stats e os players já existirem!
+  if (!stats || !players) return null;
 
   const opponentId = Object.keys(players).find((id) => id !== myId);
-  const myName = players[myId].name || "Você";
-  const oppName = players[opponentId].name || "Oponente";
+
+  // O uso do "?." (Optional Chaining) evita o erro "Cannot read properties of undefined"
+  const myName = players[myId]?.name || "Você";
+  const oppName =
+    opponentId && players[opponentId] ? players[opponentId].name : "Oponente";
 
   const myScore = stats.scores ? stats.scores[myId] : 0;
-  const oppScore = stats.scores ? stats.scores[opponentId] : 0;
+  const oppScore = stats.scores && opponentId ? stats.scores[opponentId] : 0;
 
   const amIWinner = stats.roundWinnerId === myId;
   const matchWinner = stats.matchWinnerId;
