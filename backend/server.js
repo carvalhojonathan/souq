@@ -1,7 +1,7 @@
 const express = require("express");
 const http = require("http");
 const { Server } = require("socket.io");
-const path = require("path"); // <-- ADICIONADO PARA O RENDER
+const path = require("path");
 const {
   initializeGame,
   resetGameForNewRound,
@@ -74,7 +74,6 @@ io.on("connection", (socket) => {
       ? room.names.challenger.trim().toLowerCase()
       : "";
 
-    // FUNÇÃO ATUALIZADA: Sincroniza o ID antigo com o ID novo no estado do jogo
     const handleReconnect = (role) => {
       const oldId = room.players[role];
       const newId = socket.id;
@@ -83,11 +82,9 @@ io.on("connection", (socket) => {
       socket.join(roomId);
 
       if (room.gameState && oldId && oldId !== newId) {
-        // Transfere os dados (cartas, rebanho, pontos) para o novo ID do navegador
         room.gameState.players[newId] = room.gameState.players[oldId];
         delete room.gameState.players[oldId];
 
-        // Se era a vez da pessoa que caiu, garante que continua sendo a vez dela
         if (room.gameState.currentTurn === oldId) {
           room.gameState.currentTurn = newId;
         }
@@ -202,7 +199,16 @@ io.on("connection", (socket) => {
           room.players.host,
           room.players.challenger,
         );
-        io.to(roomId).emit("updateGameState", room.gameState);
+
+        // CORREÇÃO CRÍTICA: Enviar o estado filtrado em vez do estado bruto
+        io.to(room.players.host).emit(
+          "updateGameState",
+          getFilteredState(room.gameState, room.players.host),
+        );
+        io.to(room.players.challenger).emit(
+          "updateGameState",
+          getFilteredState(room.gameState, room.players.challenger),
+        );
       } else {
         room.gameState.currentTurn = Object.keys(room.gameState.players).find(
           (id) => id !== socket.id,
@@ -257,18 +263,10 @@ io.on("connection", (socket) => {
   });
 });
 
-// ==========================================
-// ADIÇÕES PARA HOSPEDAGEM (RENDER.COM)
-// ==========================================
-
-// 1. Serve os ficheiros estáticos que o React vai gerar na pasta "build"
 app.use(express.static(path.join(__dirname, "../frontend/build")));
-
-// 2. Qualquer rota não encontrada vai para o index.html (evita erros ao atualizar a página)
 app.get("*", (req, res) => {
   res.sendFile(path.join(__dirname, "../frontend/build", "index.html"));
 });
 
-// 3. A porta agora usa a variável de ambiente do servidor, ou 3000 por padrão
 const PORT = process.env.PORT || 3000;
 server.listen(PORT, () => console.log(`🚀 Servidor na porta ${PORT}`));

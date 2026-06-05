@@ -23,9 +23,11 @@ export default function ActionPanel({
   const selectedMarketCamels = selectedMarket.filter(
     (c) => c === "camel",
   ).length;
-  const selectedMarketGoods = selectedMarket.filter(
-    (c) => c !== "camel",
-  ).length;
+  // const selectedMarketGoods = selectedMarket.filter(c => c !== 'camel').length;
+
+  // VERIFICAÇÃO DE LIMITE DE CARTAS (Impede o bug das 7 cartas)
+  const expectedHandSizeAfterTrade =
+    myPlayer.hand.length + selectedMarket.length - selectedHand.length;
 
   const canTakeOne =
     selectedMarket.length === 1 &&
@@ -36,10 +38,13 @@ export default function ActionPanel({
     selectedMarket.length > 0 &&
     selectedMarket.every((c) => c === "camel") &&
     selectedTotalToTrade === 0;
+
+  // O botão só ativa se a mão resultante for 7 ou menos
   const canTrade =
     selectedMarket.length > 1 &&
     selectedMarket.length === selectedTotalToTrade &&
-    selectedMarketCamels === 0;
+    selectedMarketCamels === 0 &&
+    expectedHandSizeAfterTrade <= 7;
 
   const canSell =
     selectedHand.length > 0 &&
@@ -51,12 +56,10 @@ export default function ActionPanel({
 
   return (
     <div className="bg-white p-2 rounded-lg shadow-sm border border-jaipur-gold flex items-stretch h-full gap-2">
-      {/* Bloco do Turno colado à esquerda */}
       <div
         className={`flex flex-col items-center justify-center p-2 rounded border-2 w-[80px] md:w-[100px] flex-shrink-0 transition-colors shadow-sm ${isMyTurn ? "bg-jaipur-green border-green-700 text-white animate-pulse" : "bg-gray-100 border-gray-300 text-gray-500"}`}
       >
         <span className="text-[9px] md:text-[10px] font-bold text-center uppercase leading-tight tracking-wider">
-          {/* Alterado para AGUARDANDO OPONENTE e SUA VEZ */}
           {isMyTurn ? "SUA VEZ" : "AGUARDANDO OPONENTE"}
         </span>
       </div>

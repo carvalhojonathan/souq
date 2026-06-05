@@ -89,19 +89,29 @@ export default function ScoreBoard({ myPlayer, opponent }) {
       const key =
         t.type === "bonus"
           ? "bonus"
-          : t.good || t.goodType || t.id || t.name || "good";
+          : t.type === "camel"
+            ? "camel"
+            : t.good || t.goodType || t.id || t.name || "good";
       if (!grouped[key]) grouped[key] = [];
       grouped[key].push(t);
     });
 
     return (
-      <div className="flex flex-wrap gap-2 mt-1">
+      <div className="flex flex-wrap gap-4 mt-2">
         {Object.keys(grouped).map((groupKey) => (
-          <div key={groupKey} className="flex gap-[2px]">
+          <div key={groupKey} className="flex flex-col items-center">
             {grouped[groupKey].map((t, i) => {
-              // Modificado aqui: Não imprime mais '?' para o oponente, imprime string vazia
               const val = t.type === "bonus" && isOpponent ? "" : t.value;
-              return <MiniTokenBadge key={i} val={val} groupKey={groupKey} />;
+              return (
+                // O segredo do empilhamento (uma embaixo da outra) está no -mt-2 e z-index
+                <div
+                  key={i}
+                  className={i > 0 ? "-mt-2" : ""}
+                  style={{ zIndex: 20 - i }}
+                >
+                  <MiniTokenBadge val={val} groupKey={groupKey} />
+                </div>
+              );
             })}
           </div>
         ))}
@@ -137,7 +147,6 @@ export default function ScoreBoard({ myPlayer, opponent }) {
             <div className="flex items-center gap-1 text-sm font-display font-bold text-jaipur-red">
               <FaCoins className="text-jaipur-gold text-xs" />{" "}
               {oppScore.goodsSum}
-              {/* Opcional: Removido o "(+?)" vermelho feio que ficava perto do score. */}
               {oppScore.bonusCount > 0 && (
                 <span className="text-[10px] ml-1 text-jaipur-red">
                   (+ bônus)
