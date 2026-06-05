@@ -19,7 +19,7 @@ const io = new Server(server, { cors: { origin: "*" } });
 const rooms = {};
 
 // ==========================================
-// FILTRAGEM DO ESTADO (COM CORREÇÃO ANTI-CRASH)
+// FILTRAGEM DO ESTADO
 // ==========================================
 function getFilteredState(gameState, playerId) {
   if (!gameState) return null;
@@ -29,12 +29,9 @@ function getFilteredState(gameState, playerId) {
   );
 
   if (opponentId && stateCopy.players[opponentId]) {
-    // Envia SEMPRE o handCount para evitar erros de leitura no frontend
     stateCopy.players[opponentId].handCount =
       stateCopy.players[opponentId].hand.length;
 
-    // Só apaga as cartas do oponente se a rodada AINDA NÃO acabou
-    // Se a rodada acabou (tem roundEndStats), a mão do adversário vai visível para o placar!
     if (!stateCopy.roundEndStats) {
       delete stateCopy.players[opponentId].hand;
     }
@@ -218,7 +215,10 @@ io.on("connection", (socket) => {
           room.players.challenger,
         );
 
-        // Envia o estado filtrado para os dois com as estatísticas preenchidas!
+        // CORREÇÃO CRÍTICA: Bloqueia imediatamente o turno para que ninguém
+        // consiga jogar enquanto a tela de Fim de Rodada estiver aberta.
+        room.gameState.currentTurn = null;
+
         io.to(room.players.host).emit(
           "updateGameState",
           getFilteredState(room.gameState, room.players.host),
