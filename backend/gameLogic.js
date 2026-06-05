@@ -343,7 +343,9 @@ function processRoundEnd(gameState, hostId, challengerId) {
     else {
       if (hostStats.goodsTokensCount > challengerStats.goodsTokensCount)
         roundWinnerId = hostId;
-      else roundWinnerId = challengerId;
+      else if (challengerStats.goodsTokensCount > hostStats.goodsTokensCount)
+        roundWinnerId = challengerId;
+      else roundWinnerId = hostId; // PREVENÇÃO DE CRASH: Em caso de empate idêntico e total, atribuir vitória por padrão.
     }
   }
 
@@ -353,10 +355,15 @@ function processRoundEnd(gameState, hostId, challengerId) {
 
   return {
     roundWinnerId,
-    isGameOver,
+    matchWinnerId: isGameOver ? roundWinnerId : null, // Mapeado para o Modal exibir o campeão final
+    scores: {
+      // Estrutura exata de pontos que o seu Modal espera ler!
+      [hostId]: hostStats.rupees,
+      [challengerId]: challengerStats.rupees,
+    },
     stats: {
-      player1: hostStats,
-      player2: challengerStats,
+      [hostId]: hostStats,
+      [challengerId]: challengerStats,
     },
   };
 }
