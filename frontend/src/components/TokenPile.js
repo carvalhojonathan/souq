@@ -104,14 +104,14 @@ export default function TokenPile({ type, label, data }) {
               animate={{ opacity: 1, scale: 1 }}
               exit={{
                 opacity: 0,
-                y: -50,
+                x: -50,
                 scale: 0.5,
                 transition: { duration: 0.4 },
               }}
               className="flex flex-col items-center"
-              // AQUI FAZ O EMPILHAMENTO VERTICAL UMA EMBAIXO DA OUTRA
+              // Fichas individuais espalhadas LADO A LADO na horizontal
               style={{
-                marginTop: index === 0 ? "0" : "-24px",
+                marginLeft: index === 0 ? "0" : "-8px",
                 zIndex: count - index,
               }}
             >
@@ -149,12 +149,14 @@ export default function TokenPile({ type, label, data }) {
   return (
     <div
       title={tooltipText}
-      className="flex flex-col items-center my-1 px-2 cursor-help group"
+      className="flex flex-col items-start my-1 cursor-help group w-full"
     >
-      <span className="text-[9px] md:text-[10px] font-bold text-gray-500 uppercase tracking-widest mb-1 text-center">
+      <span className="text-[9px] md:text-[10px] font-bold text-gray-500 uppercase tracking-widest mb-1 text-left">
         {label}
       </span>
-      <div className="flex flex-col items-center pb-4">{renderStack()}</div>
+      <div className="flex flex-row items-center justify-start">
+        {renderStack()}
+      </div>
     </div>
   );
 }

@@ -34,7 +34,7 @@ const MiniTokenBadge = ({ val, groupKey }) => {
 
   if (imgSrc && !imgError) {
     return (
-      <div className="flex flex-col items-center">
+      <div className="flex flex-col items-center bg-white rounded-full p-0.5 shadow-sm">
         <img
           src={imgSrc}
           alt={groupKey}
@@ -97,13 +97,22 @@ export default function ScoreBoard({ myPlayer, opponent }) {
     });
 
     return (
-      // CORREÇÃO: flex-wrap com gap-2 para garantir que as fichas voltam a ficar lado a lado horizontalmente
-      <div className="flex flex-wrap gap-2 mt-1">
+      // Envolve tudo numa coluna para que as categorias fiquem UMA EMBAIXO DA OUTRA
+      <div className="flex flex-col gap-1 mt-2">
         {Object.keys(grouped).map((groupKey) => (
-          <div key={groupKey} className="flex gap-[2px]">
+          // Dentro da categoria, as fichas ficam LADO A LADO na horizontal
+          <div key={groupKey} className="flex flex-row items-center">
             {grouped[groupKey].map((t, i) => {
               const val = t.type === "bonus" && isOpponent ? "" : t.value;
-              return <MiniTokenBadge key={i} val={val} groupKey={groupKey} />;
+              return (
+                <div
+                  key={i}
+                  className={i > 0 ? "-ml-3" : ""}
+                  style={{ zIndex: i }}
+                >
+                  <MiniTokenBadge val={val} groupKey={groupKey} />
+                </div>
+              );
             })}
           </div>
         ))}
@@ -112,7 +121,7 @@ export default function ScoreBoard({ myPlayer, opponent }) {
   };
 
   return (
-    <div className="bg-white p-3 rounded-lg shadow-sm border border-jaipur-gold flex flex-col h-full">
+    <div className="bg-white p-3 rounded-lg shadow-sm border border-jaipur-gold flex flex-col h-full overflow-y-auto">
       <h3 className="text-[10px] font-bold text-gray-600 uppercase tracking-widest border-b border-gray-300 pb-1 mb-2 flex items-center gap-1">
         🏆 Placar Parcial
       </h3>
