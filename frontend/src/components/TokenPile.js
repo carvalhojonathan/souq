@@ -34,7 +34,6 @@ export default function TokenPile({ type, label, data }) {
   if (isArray) {
     count = data.length;
   } else if (type === "camel") {
-    // A ficha de camelo nunca esgota durante a partida. Forçada a 1.
     count = 1;
   } else {
     count = typeof data === "number" ? data : data ? 1 : 0;
@@ -94,8 +93,7 @@ export default function TokenPile({ type, label, data }) {
       <AnimatePresence>
         {stackItems.map((_, index) => {
           let displayValue = "";
-          if (type === "camel")
-            displayValue = "5"; // Ficha de camelo vale sempre 5 pontos
+          if (type === "camel") displayValue = "5";
           else if (isArray) displayValue = data[index].value;
 
           return (
@@ -111,8 +109,9 @@ export default function TokenPile({ type, label, data }) {
                 transition: { duration: 0.4 },
               }}
               className="flex flex-col items-center"
+              // CORREÇÃO: Sobreposição vertical! marginTop negativo faz empilhar uma embaixo da outra.
               style={{
-                marginLeft: index === 0 ? "0" : "-8px",
+                marginTop: index === 0 ? "0" : "-24px",
                 zIndex: count - index,
               }}
             >
@@ -150,13 +149,14 @@ export default function TokenPile({ type, label, data }) {
   return (
     <div
       title={tooltipText}
-      className="flex items-center my-1 pr-2 cursor-help group"
+      className="flex items-center my-1 pr-4 cursor-help group"
     >
       <div className="flex flex-col items-start">
         <span className="text-[9px] md:text-[10px] font-bold text-gray-500 uppercase tracking-widest mb-1 text-left">
           {label}
         </span>
-        <div className="flex items-start justify-start">{renderStack()}</div>
+        {/* CORREÇÃO: flex-col para garantir que a pilha cresce para baixo */}
+        <div className="flex flex-col items-center pt-1">{renderStack()}</div>
       </div>
     </div>
   );

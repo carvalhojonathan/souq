@@ -97,21 +97,13 @@ export default function ScoreBoard({ myPlayer, opponent }) {
     });
 
     return (
-      <div className="flex flex-wrap gap-4 mt-2">
+      // CORREÇÃO: flex-wrap com gap-2 para garantir que as fichas voltam a ficar lado a lado horizontalmente
+      <div className="flex flex-wrap gap-2 mt-1">
         {Object.keys(grouped).map((groupKey) => (
-          <div key={groupKey} className="flex flex-col items-center">
+          <div key={groupKey} className="flex gap-[2px]">
             {grouped[groupKey].map((t, i) => {
               const val = t.type === "bonus" && isOpponent ? "" : t.value;
-              return (
-                // O segredo do empilhamento (uma embaixo da outra) está no -mt-2 e z-index
-                <div
-                  key={i}
-                  className={i > 0 ? "-mt-2" : ""}
-                  style={{ zIndex: 20 - i }}
-                >
-                  <MiniTokenBadge val={val} groupKey={groupKey} />
-                </div>
-              );
+              return <MiniTokenBadge key={i} val={val} groupKey={groupKey} />;
             })}
           </div>
         ))}

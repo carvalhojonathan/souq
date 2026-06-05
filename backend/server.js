@@ -24,11 +24,15 @@ function getFilteredState(gameState, playerId) {
   const opponentId = Object.keys(stateCopy.players).find(
     (id) => id !== playerId,
   );
-  if (opponentId && stateCopy.players[opponentId]) {
+
+  // CORREÇÃO CRÍTICA: Só esconde a mão do oponente se a rodada AINDA NÃO acabou.
+  // Se existir roundEndStats, deixa a mão visível para a tela de fim de jogo não dar crash!
+  if (opponentId && stateCopy.players[opponentId] && !stateCopy.roundEndStats) {
     stateCopy.players[opponentId].handCount =
       stateCopy.players[opponentId].hand.length;
     delete stateCopy.players[opponentId].hand;
   }
+
   if (Array.isArray(stateCopy.tokens.bonus3))
     stateCopy.tokens.bonus3 = stateCopy.tokens.bonus3.length;
   if (Array.isArray(stateCopy.tokens.bonus4))
@@ -199,8 +203,6 @@ io.on("connection", (socket) => {
           room.players.host,
           room.players.challenger,
         );
-
-        // CORREÇÃO CRÍTICA: Enviar o estado filtrado em vez do estado bruto
         io.to(room.players.host).emit(
           "updateGameState",
           getFilteredState(room.gameState, room.players.host),
