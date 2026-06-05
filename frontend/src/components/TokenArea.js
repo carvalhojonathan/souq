@@ -20,7 +20,7 @@ export default function TokenArea({ tokens }) {
 
       {/* Bónus */}
       <div className="flex flex-wrap justify-center md:justify-start items-start gap-x-2">
-        <TokenPile type="bonus5" label="5 Cartas" data={tokens.bonus5} />
+        <TokenPile type="bonus5" label="5 Cartass" data={tokens.bonus5} />
         <TokenPile type="bonus4" label="4 Cartas" data={tokens.bonus4} />
         <TokenPile type="bonus3" label="3 Cartas" data={tokens.bonus3} />
         <TokenPile type="camel" label="Mais camelos" data={tokens.camel} />
