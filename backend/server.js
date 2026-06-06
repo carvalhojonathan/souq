@@ -12,6 +12,8 @@ const {
   checkRoundEnd,
   processRoundEnd,
 } = require("./gameLogic");
+// IMPORTA O CÉREBRO DO ROBÔ
+const { executeBotTurn } = require("./cpuBot");
 
 const app = express();
 const server = http.createServer(app);
@@ -57,7 +59,115 @@ const countItems = (arr) => {
 };
 
 // ==========================================
-// SOCKET.IO - LÓGICA DO JOGO E SALAS
+// MOTOR CENTRAL (HUMANOS E CPU USAM ISTO)
+// ==========================================
+function processAction(roomId, playerId, actionData, socket = null) {
+  const room = rooms[roomId];
+  if (!room || !room.gameState || room.gameState.currentTurn !== playerId) {
+    if (socket) socket.emit("errorMsg", "Não é o seu turno!");
+    return;
+  }
+
+  const playerName =
+    playerId === room.players.host ? room.names.host : room.names.challenger;
+
+  const pt = {
+    diamond: "Diamante(s)",
+    gold: "Ouro(s)",
+    silver: "Prata(s)",
+    cloth: "Tecido(s)",
+    spice: "Especiaria(s)",
+    leather: "Couro(s)",
+    camel: "Camelo(s)",
+  };
+
+  try {
+    let logMsg = "";
+
+    if (actionData.type === "TAKE_ONE") {
+      const card = room.gameState.market[actionData.payload.marketIndex];
+      logMsg = `${playerName} pegou 1 ${pt[card]} do mercado.`;
+      handleTakeOne(room.gameState, playerId, actionData.payload);
+    } else if (actionData.type === "TAKE_SEVERAL") {
+      const takenNames = actionData.payload.marketIndices.map(
+        (i) => pt[room.gameState.market[i]],
+      );
+      const givenNames = actionData.payload.handIndices.map(
+        (i) => pt[room.gameState.players[playerId].hand[i]],
+      );
+      for (let i = 0; i < actionData.payload.herdCount; i++)
+        givenNames.push("Camelo(s)");
+
+      const takenStr = countItems(takenNames);
+      const givenStr = countItems(givenNames);
+
+      logMsg = `${playerName} trocou ${givenStr} por ${takenStr}.`;
+      handleTakeSeveral(room.gameState, playerId, actionData.payload);
+    } else if (actionData.type === "TAKE_CAMELS") {
+      const camelsCount = room.gameState.market.filter(
+        (c) => c === "camel",
+      ).length;
+      logMsg = `${playerName} pegou ${camelsCount} Camelo(s) do mercado.`;
+      handleTakeCamels(room.gameState, playerId);
+    } else if (actionData.type === "SELL_GOODS") {
+      const count = actionData.payload.handIndices.length;
+      const cardType =
+        room.gameState.players[playerId].hand[
+          actionData.payload.handIndices[0]
+        ];
+      logMsg = `${playerName} vendeu ${count} ${pt[cardType]}.`;
+      handleSellGoods(room.gameState, playerId, actionData.payload);
+    } else {
+      throw new Error("Ação inválida.");
+    }
+
+    room.gameState.logs.unshift(logMsg);
+    if (room.gameState.logs.length > 8) room.gameState.logs.pop();
+
+    // VERIFICA FIM DE RODADA
+    if (checkRoundEnd(room.gameState)) {
+      room.gameState.roundEndStats = processRoundEnd(
+        room.gameState,
+        room.players.host,
+        room.players.challenger,
+      );
+      room.gameState.currentTurn = null; // Bloqueia turno até a próxima rodada
+    } else {
+      // Passa a vez para o outro jogador
+      room.gameState.currentTurn = Object.keys(room.gameState.players).find(
+        (id) => id !== playerId,
+      );
+    }
+
+    // ATUALIZA AS TELAS DE QUEM FOR HUMANO
+    if (room.players.host) {
+      io.to(room.players.host).emit(
+        "updateGameState",
+        getFilteredState(room.gameState, room.players.host),
+      );
+    }
+    if (room.players.challenger && room.players.challenger !== "CPU") {
+      io.to(room.players.challenger).emit(
+        "updateGameState",
+        getFilteredState(room.gameState, room.players.challenger),
+      );
+    }
+
+    // GATILHO DA CPU: Se agora for a vez do robô, acorda ele!
+    if (room.gameState.currentTurn === "CPU" && !room.gameState.roundEndStats) {
+      executeBotTurn(roomId, room.gameState, room.cpuDifficulty, processAction);
+    }
+  } catch (error) {
+    if (socket) {
+      socket.emit("errorMsg", error.message);
+    } else {
+      console.error(`[CRASH CPU Sala ${roomId}]:`, error.message);
+    }
+  }
+}
+
+// ==========================================
+// SOCKET.IO - GESTÃO DE SALAS E EVENTOS
 // ==========================================
 io.on("connection", (socket) => {
   socket.on("createRoom", ({ roomId, playerName }) => {
@@ -73,6 +183,33 @@ io.on("connection", (socket) => {
       };
       socket.emit("roomCreated", roomId);
     }
+  });
+
+  // NOVO EVENTO: Criação Imediata da Sala contra a CPU
+  socket.on("createRoomVsCPU", ({ roomId, playerName, difficulty }) => {
+    if (Object.keys(rooms).length >= 5)
+      return socket.emit("errorMsg", "Servidor cheio (Máx 5 salas).");
+
+    socket.join(roomId);
+    rooms[roomId] = {
+      players: { host: socket.id, challenger: "CPU" }, // ID Falso = CPU
+      names: { host: playerName, challenger: "🤖 " + difficulty },
+      gameState: null,
+      isCPUGame: true,
+      cpuDifficulty: difficulty,
+    };
+
+    const room = rooms[roomId];
+    room.gameState = initializeGame(room.players.host, room.players.challenger);
+    room.gameState.players[room.players.host].name = room.names.host;
+    room.gameState.players[room.players.challenger].name =
+      room.names.challenger;
+
+    socket.emit("gameReady", "Começou contra a CPU!");
+    socket.emit(
+      "updateGameState",
+      getFilteredState(room.gameState, room.players.host),
+    );
   });
 
   socket.on("joinRoom", ({ roomId, playerName }) => {
@@ -146,127 +283,45 @@ io.on("connection", (socket) => {
     }
   });
 
+  // O Evento do Cliente apenas direciona para o Processador Central
   socket.on("playAction", (roomId, actionData) => {
-    const room = rooms[roomId];
-    if (!room || !room.gameState || room.gameState.currentTurn !== socket.id)
-      return socket.emit("errorMsg", "Não é o seu turno!");
-
-    const playerName =
-      socket.id === room.players.host ? room.names.host : room.names.challenger;
-
-    const pt = {
-      diamond: "Diamante(s)",
-      gold: "Ouro(s)",
-      silver: "Prata(s)",
-      cloth: "Tecido(s)",
-      spice: "Especiaria(s)",
-      leather: "Couro(s)",
-      camel: "Camelo(s)",
-    };
-
-    try {
-      let logMsg = "";
-
-      if (actionData.type === "TAKE_ONE") {
-        const card = room.gameState.market[actionData.payload.marketIndex];
-        logMsg = `${playerName} pegou 1 ${pt[card]} do mercado.`;
-        handleTakeOne(room.gameState, socket.id, actionData.payload);
-      } else if (actionData.type === "TAKE_SEVERAL") {
-        const takenNames = actionData.payload.marketIndices.map(
-          (i) => pt[room.gameState.market[i]],
-        );
-        const givenNames = actionData.payload.handIndices.map(
-          (i) => pt[room.gameState.players[socket.id].hand[i]],
-        );
-        for (let i = 0; i < actionData.payload.herdCount; i++)
-          givenNames.push("Camelo(s)");
-
-        const takenStr = countItems(takenNames);
-        const givenStr = countItems(givenNames);
-
-        logMsg = `${playerName} trocou ${givenStr} por ${takenStr}.`;
-        handleTakeSeveral(room.gameState, socket.id, actionData.payload);
-      } else if (actionData.type === "TAKE_CAMELS") {
-        const camelsCount = room.gameState.market.filter(
-          (c) => c === "camel",
-        ).length;
-        logMsg = `${playerName} pegou ${camelsCount} Camelo(s) do mercado.`;
-        handleTakeCamels(room.gameState, socket.id);
-      } else if (actionData.type === "SELL_GOODS") {
-        const count = actionData.payload.handIndices.length;
-        const cardType =
-          room.gameState.players[socket.id].hand[
-            actionData.payload.handIndices[0]
-          ];
-        logMsg = `${playerName} vendeu ${count} ${pt[cardType]}.`;
-        handleSellGoods(room.gameState, socket.id, actionData.payload);
-      } else {
-        throw new Error("Ação inválida.");
-      }
-
-      room.gameState.logs.unshift(logMsg);
-      if (room.gameState.logs.length > 8) room.gameState.logs.pop();
-
-      // VERIFICA SE A RODADA ACABOU
-      if (checkRoundEnd(room.gameState)) {
-        room.gameState.roundEndStats = processRoundEnd(
-          room.gameState,
-          room.players.host,
-          room.players.challenger,
-        );
-
-        // CORREÇÃO CRÍTICA: Bloqueia imediatamente o turno para que ninguém
-        // consiga jogar enquanto a tela de Fim de Rodada estiver aberta.
-        room.gameState.currentTurn = null;
-
-        io.to(room.players.host).emit(
-          "updateGameState",
-          getFilteredState(room.gameState, room.players.host),
-        );
-        io.to(room.players.challenger).emit(
-          "updateGameState",
-          getFilteredState(room.gameState, room.players.challenger),
-        );
-      } else {
-        room.gameState.currentTurn = Object.keys(room.gameState.players).find(
-          (id) => id !== socket.id,
-        );
-        io.to(room.players.host).emit(
-          "updateGameState",
-          getFilteredState(room.gameState, room.players.host),
-        );
-        io.to(room.players.challenger).emit(
-          "updateGameState",
-          getFilteredState(room.gameState, room.players.challenger),
-        );
-      }
-    } catch (error) {
-      socket.emit("errorMsg", error.message);
-    }
+    processAction(roomId, socket.id, actionData, socket);
   });
 
   socket.on("requestNextRound", (roomId) => {
     const room = rooms[roomId];
     if (!room || !room.gameState || !room.gameState.roundEndStats) return;
+
     const winnerId = room.gameState.roundEndStats.roundWinnerId;
     const loserId =
       Object.keys(room.gameState.players).find((id) => id !== winnerId) ||
       room.players.host;
-    room.gameState.roundEndStats = null;
 
+    room.gameState.roundEndStats = null;
     room.gameState = resetGameForNewRound(room.gameState, loserId);
+
     room.gameState.players[room.players.host].name = room.names.host;
     room.gameState.players[room.players.challenger].name =
       room.names.challenger;
 
-    io.to(room.players.host).emit(
-      "updateGameState",
-      getFilteredState(room.gameState, room.players.host),
-    );
-    io.to(room.players.challenger).emit(
-      "updateGameState",
-      getFilteredState(room.gameState, room.players.challenger),
-    );
+    // Atualiza humanos
+    if (room.players.host) {
+      io.to(room.players.host).emit(
+        "updateGameState",
+        getFilteredState(room.gameState, room.players.host),
+      );
+    }
+    if (room.players.challenger && room.players.challenger !== "CPU") {
+      io.to(room.players.challenger).emit(
+        "updateGameState",
+        getFilteredState(room.gameState, room.players.challenger),
+      );
+    }
+
+    // GATILHO DA CPU: Se a CPU perdeu a última rodada, é a vez dela começar!
+    if (room.gameState.currentTurn === "CPU") {
+      executeBotTurn(roomId, room.gameState, room.cpuDifficulty, processAction);
+    }
   });
 
   socket.on("leaveRoom", (roomId) => {

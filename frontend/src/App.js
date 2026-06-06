@@ -2,7 +2,7 @@ import React, { useState, useEffect, useRef } from "react";
 import { io } from "socket.io-client";
 import { motion, AnimatePresence } from "framer-motion";
 import GameBoard from "./components/GameBoard";
-import { FaMoon, FaSun } from "react-icons/fa";
+import { FaMoon, FaSun, FaRobot, FaUserFriends } from "react-icons/fa";
 
 const socketUrl =
   window.location.hostname === "localhost" ? "http://localhost:3000" : "/";
@@ -26,10 +26,14 @@ function App() {
     () => localStorage.getItem("jaipur_isWaiting") === "true",
   );
 
-  // ESTADO DO MODO ESCURO
+  // ESTADOS DO MODO ESCURO
   const [isDarkMode, setIsDarkMode] = useState(
     () => localStorage.getItem("jaipur_theme") === "dark",
   );
+
+  // NOVOS ESTADOS: CPU
+  const [playVsCPU, setPlayVsCPU] = useState(false);
+  const [cpuDifficulty, setCpuDifficulty] = useState("Comerciante distraído");
 
   const [gameState, setGameState] = useState(null);
   const [opponentConnected, setOpponentConnected] = useState(false);
@@ -127,6 +131,21 @@ function App() {
     socket.emit("createRoom", { roomId: randomCode, playerName });
   };
 
+  // NOVA FUNÇÃO: Iniciar jogo contra CPU
+  const startCPUGame = () => {
+    isManualAction.current = true;
+    if (playerName.trim() === "")
+      return setErrorMsg("Por favor, digite o seu nome primeiro.");
+    // Cria um código único com sufixo CPU para o servidor identificar facilmente
+    const cpuRoomCode =
+      "CPU-" + Math.floor(1000 + Math.random() * 9000).toString();
+    socket.emit("createRoomVsCPU", {
+      roomId: cpuRoomCode,
+      playerName,
+      difficulty: cpuDifficulty,
+    });
+  };
+
   const joinRoom = () => {
     isManualAction.current = true;
     if (playerName.trim() === "")
@@ -145,7 +164,6 @@ function App() {
   };
 
   return (
-    // CORREÇÃO: Fundo original amarelado restaurado (bg-[#fcf8e8])
     <div className="min-h-screen bg-[#fcf8e8] dark:bg-gray-900 transition-colors duration-300 text-gray-800 dark:text-gray-100 font-body">
       {!inGame && (
         <button
@@ -206,8 +224,7 @@ function App() {
                 Abandonar Partida?
               </h3>
               <p className="text-gray-600 dark:text-gray-300 font-bold mb-8 text-sm">
-                Tem a certeza que deseja sair da sala? A partida será encerrada
-                para o seu oponente também.
+                Tem a certeza que deseja sair da sala? A partida será encerrada.
               </p>
               <div className="flex gap-4">
                 <button
@@ -220,7 +237,7 @@ function App() {
                   onClick={confirmLeaveRoom}
                   className="flex-1 py-3 px-4 bg-jaipur-red text-white font-bold rounded-lg hover:bg-red-800 transition-colors shadow-md"
                 >
-                  Sair da Sala
+                  Sair
                 </button>
               </div>
             </motion.div>
@@ -279,6 +296,7 @@ function App() {
             <p className="text-gray-600 dark:text-gray-300 mb-8 font-bold">
               O mercado te aguarda!
             </p>
+
             <div className="flex flex-col gap-4">
               <input
                 type="text"
@@ -288,37 +306,104 @@ function App() {
                 value={playerName}
                 onChange={(e) => setPlayerName(e.target.value)}
               />
-              <motion.button
-                whileTap={{ scale: 0.95 }}
-                onClick={createRoom}
-                className="w-full bg-jaipur-green text-white font-bold py-4 px-4 rounded-lg hover:opacity-90 transition-colors shadow-md text-lg touch-manipulation select-none"
-              >
-                🌟 Criar Nova Sala
-              </motion.button>
-              <div className="flex items-center my-2">
-                <div className="flex-grow border-t border-gray-300 dark:border-gray-600"></div>
-                <span className="px-3 text-gray-400 dark:text-gray-500 text-sm font-bold">
-                  OU ENTRAR NUMA SALA
-                </span>
-                <div className="flex-grow border-t border-gray-300 dark:border-gray-600"></div>
-              </div>
-              <div className="flex gap-2">
-                <input
-                  type="text"
-                  maxLength="4"
-                  className="w-2/3 px-4 py-3 rounded-lg border-2 border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-white focus:outline-none focus:ring-2 focus:ring-jaipur-gold text-center text-xl tracking-widest font-bold touch-manipulation transition-colors"
-                  placeholder="CÓDIGO"
-                  value={joinCode}
-                  onChange={(e) => setJoinCode(e.target.value)}
-                />
-                <motion.button
-                  whileTap={{ scale: 0.95 }}
-                  onClick={joinRoom}
-                  className="w-1/3 bg-jaipur-gold text-white font-bold py-3 px-2 rounded-lg hover:opacity-90 transition-colors shadow-md text-sm touch-manipulation select-none"
+
+              {/* TOGGLE: Jogar com Amigos ou CPU */}
+              <div className="flex bg-gray-100 dark:bg-gray-700 rounded-lg p-1">
+                <button
+                  onClick={() => setPlayVsCPU(false)}
+                  className={`flex-1 flex items-center justify-center gap-2 py-2 rounded-md text-sm font-bold transition-all ${!playVsCPU ? "bg-white dark:bg-gray-600 text-jaipur-green shadow-sm" : "text-gray-500 dark:text-gray-400 hover:bg-gray-200 dark:hover:bg-gray-600"}`}
                 >
-                  Entrar
-                </motion.button>
+                  <FaUserFriends /> Amigos
+                </button>
+                <button
+                  onClick={() => setPlayVsCPU(true)}
+                  className={`flex-1 flex items-center justify-center gap-2 py-2 rounded-md text-sm font-bold transition-all ${playVsCPU ? "bg-jaipur-gold text-white shadow-sm" : "text-gray-500 dark:text-gray-400 hover:bg-gray-200 dark:hover:bg-gray-600"}`}
+                >
+                  <FaRobot /> Jogar Solo
+                </button>
               </div>
+
+              {/* MODO CPU: Mostra seleção de Dificuldade */}
+              <AnimatePresence mode="wait">
+                {playVsCPU ? (
+                  <motion.div
+                    key="cpu-mode"
+                    initial={{ opacity: 0, height: 0 }}
+                    animate={{ opacity: 1, height: "auto" }}
+                    exit={{ opacity: 0, height: 0 }}
+                    className="flex flex-col gap-4 overflow-hidden"
+                  >
+                    <div className="relative">
+                      <select
+                        value={cpuDifficulty}
+                        onChange={(e) => setCpuDifficulty(e.target.value)}
+                        className="w-full px-4 py-3 rounded-lg border-2 border-jaipur-gold dark:border-yellow-600 bg-yellow-50 dark:bg-gray-700 dark:text-white focus:outline-none focus:ring-2 focus:ring-jaipur-gold text-center font-bold text-sm transition-colors appearance-none"
+                      >
+                        <option value="Comerciante distraído">
+                          🟢 Fácil - Comerciante Distraído
+                        </option>
+                        <option value="Mercador Experiente">
+                          🟡 Normal - Mercador Experiente
+                        </option>
+                        <option value="Mestre do Souq">
+                          🔴 Difícil - Mestre do Souq
+                        </option>
+                      </select>
+                    </div>
+
+                    <motion.button
+                      whileTap={{ scale: 0.95 }}
+                      onClick={startCPUGame}
+                      className="w-full bg-jaipur-gold hover:bg-yellow-600 text-white font-bold py-4 px-4 rounded-lg transition-colors shadow-md text-lg touch-manipulation select-none"
+                    >
+                      🤖 Iniciar Partida Solo
+                    </motion.button>
+                  </motion.div>
+                ) : (
+                  /* MODO MULTIPLAYER: Mostra Criar/Entrar */
+                  <motion.div
+                    key="multiplayer-mode"
+                    initial={{ opacity: 0, height: 0 }}
+                    animate={{ opacity: 1, height: "auto" }}
+                    exit={{ opacity: 0, height: 0 }}
+                    className="flex flex-col gap-4 overflow-hidden"
+                  >
+                    <motion.button
+                      whileTap={{ scale: 0.95 }}
+                      onClick={createRoom}
+                      className="w-full bg-jaipur-green hover:bg-green-700 text-white font-bold py-4 px-4 rounded-lg transition-colors shadow-md text-lg touch-manipulation select-none"
+                    >
+                      🌟 Criar Nova Sala
+                    </motion.button>
+
+                    <div className="flex items-center my-1">
+                      <div className="flex-grow border-t border-gray-300 dark:border-gray-600"></div>
+                      <span className="px-3 text-gray-400 dark:text-gray-500 text-xs font-bold uppercase tracking-wider">
+                        ou entrar com código
+                      </span>
+                      <div className="flex-grow border-t border-gray-300 dark:border-gray-600"></div>
+                    </div>
+
+                    <div className="flex gap-2">
+                      <input
+                        type="text"
+                        maxLength="4"
+                        className="w-2/3 px-4 py-3 rounded-lg border-2 border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-white focus:outline-none focus:ring-2 focus:ring-jaipur-gold text-center text-xl tracking-widest font-bold touch-manipulation transition-colors"
+                        placeholder="CÓDIGO"
+                        value={joinCode}
+                        onChange={(e) => setJoinCode(e.target.value)}
+                      />
+                      <motion.button
+                        whileTap={{ scale: 0.95 }}
+                        onClick={joinRoom}
+                        className="w-1/3 bg-gray-600 hover:bg-gray-800 dark:bg-gray-700 dark:hover:bg-gray-600 text-white font-bold py-3 px-2 rounded-lg transition-colors shadow-md text-sm touch-manipulation select-none"
+                      >
+                        Entrar
+                      </motion.button>
+                    </div>
+                  </motion.div>
+                )}
+              </AnimatePresence>
             </div>
           </div>
         </div>
