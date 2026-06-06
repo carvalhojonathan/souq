@@ -15,7 +15,8 @@ export default function GameHeader({
   toggleTheme,
 }) {
   return (
-    <div className="bg-jaipur-green dark:bg-green-900 p-2 md:p-3 rounded-xl shadow-md border-2 border-jaipur-gold flex items-center justify-between mb-2 transition-colors">
+    // Removido o dark:bg-green-900 para manter a cor original!
+    <div className="bg-jaipur-green p-2 md:p-3 rounded-xl shadow-md border-2 border-jaipur-gold flex items-center justify-between mb-2 transition-colors">
       <div className="flex items-center">
         <img
           src="/images/logo-horizontal.png"
@@ -26,7 +27,7 @@ export default function GameHeader({
 
       <div className="flex items-center gap-3">
         <div
-          className="flex items-center gap-1.5 bg-white bg-opacity-95 dark:bg-gray-800 px-2 md:px-3 py-1 md:py-1.5 rounded-full shadow-inner"
+          className="flex items-center gap-1.5 bg-white bg-opacity-95 dark:bg-gray-800 px-2 md:px-3 py-1 md:py-1.5 rounded-full shadow-inner transition-colors"
           title={
             opponentConnected ? "Oponente conectado" : "Oponente desconectado"
           }
@@ -38,7 +39,7 @@ export default function GameHeader({
                 : "text-red-500 animate-pulse"
             } rounded-full`}
           />
-          <span className="text-[10px] md:text-xs font-bold text-gray-800 dark:text-gray-200 hidden sm:block uppercase tracking-wider mt-px">
+          <span className="text-[10px] md:text-xs font-bold text-gray-800 dark:text-gray-200 hidden sm:block uppercase tracking-wider mt-px transition-colors">
             {opponentConnected ? "Online" : "Aguardando"}
           </span>
         </div>

@@ -81,7 +81,7 @@ export default function TokenPile({ type, label, data }) {
   const renderStack = () => {
     if (count === 0) {
       return (
-        <span className="text-gray-400 italic text-sm font-bold bg-gray-200 px-3 py-1 rounded-full">
+        <span className="text-gray-400 dark:text-gray-500 italic text-sm font-bold bg-gray-200 dark:bg-gray-700 px-3 py-1 rounded-full transition-colors">
           Esgotado
         </span>
       );
@@ -119,8 +119,8 @@ export default function TokenPile({ type, label, data }) {
                   src={imgSrc}
                   alt={label}
                   onError={() => setImgError(true)}
-                  // Borda alterada de border-[2px] para apenas border (borda mais fina)
-                  className="w-10 h-10 object-contain shadow-sm rounded-full border border-white bg-white"
+                  // Borda e fundo atualizados para Dark Mode
+                  className="w-10 h-10 object-contain shadow-sm rounded-full border border-white dark:border-gray-700 bg-white dark:bg-gray-800 transition-colors"
                   style={{
                     imageRendering: "-webkit-optimize-contrast",
                     transform: "translateZ(0)",
@@ -128,14 +128,15 @@ export default function TokenPile({ type, label, data }) {
                 />
               ) : (
                 <div
-                  className={`w-10 h-10 rounded-full flex justify-center items-center font-bold border border-white shadow-sm ${currentBg}`}
+                  className={`w-10 h-10 rounded-full flex justify-center items-center font-bold border border-white dark:border-gray-700 shadow-sm transition-colors ${currentBg}`}
                 >
                   {getTokenIcon(type)}
                 </div>
               )}
 
               {displayValue !== "" && displayValue !== undefined && (
-                <span className="text-[10px] font-bold text-gray-800 mt-1 bg-white bg-opacity-70 px-1 rounded shadow-sm">
+                // Etiqueta de valor atualizada para Dark Mode
+                <span className="text-[10px] font-bold text-gray-800 dark:text-gray-200 mt-1 bg-white dark:bg-gray-800 bg-opacity-70 dark:bg-opacity-90 px-1 rounded shadow-sm transition-colors">
                   {displayValue}
                 </span>
               )}
@@ -151,7 +152,7 @@ export default function TokenPile({ type, label, data }) {
       title={tooltipText}
       className="flex flex-col items-start my-1 cursor-help group w-full"
     >
-      <span className="text-[9px] md:text-[10px] font-bold text-gray-500 uppercase tracking-widest mb-1 text-left">
+      <span className="text-[9px] md:text-[10px] font-bold text-gray-500 dark:text-gray-400 uppercase tracking-widest mb-1 text-left transition-colors">
         {label}
       </span>
       <div className="flex flex-row items-center justify-start">

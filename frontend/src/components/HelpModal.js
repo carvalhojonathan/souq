@@ -3,17 +3,17 @@ import { motion } from "framer-motion";
 
 export default function HelpModal({ onClose }) {
   return (
-    <div className="fixed inset-0 bg-black bg-opacity-70 z-50 flex justify-center items-center p-4">
+    <div className="fixed inset-0 bg-black bg-opacity-70 z-[60] flex justify-center items-center p-4">
       <motion.div
         initial={{ y: 50, opacity: 0 }}
         animate={{ y: 0, opacity: 1 }}
-        className="bg-desert-light p-8 rounded-2xl shadow-2xl max-w-2xl w-full border-2 border-desert-dark max-h-[90vh] overflow-y-auto"
+        className="bg-desert-light dark:bg-gray-800 p-8 rounded-2xl shadow-2xl max-w-2xl w-full border-2 border-desert-dark dark:border-gray-700 max-h-[90vh] overflow-y-auto transition-colors"
       >
-        <h2 className="text-3xl font-display font-bold text-emerald border-b-2 border-emerald pb-4 mb-6 text-center">
+        <h2 className="text-3xl font-display font-bold text-emerald dark:text-green-400 border-b-2 border-emerald dark:border-green-400 pb-4 mb-6 text-center transition-colors">
           📜 Regras do Mercado
         </h2>
 
-        <div className="space-y-4 text-gray-800 font-body leading-relaxed">
+        <div className="space-y-4 text-gray-800 dark:text-gray-200 font-body leading-relaxed transition-colors">
           <p>
             <strong>Turno:</strong> No seu turno, deve realizar apenas uma ação:{" "}
             <em>Recolher Cartas</em> OU <em>Vender Cartas</em>.
@@ -40,7 +40,7 @@ export default function HelpModal({ onClose }) {
             </li>
           </ul>
 
-          <p className="mt-4 p-4 bg-yellow-100 rounded-lg border border-yellow-300 text-yellow-900 text-sm">
+          <p className="mt-4 p-4 bg-yellow-100 dark:bg-yellow-900/40 rounded-lg border border-yellow-300 dark:border-yellow-700 text-yellow-900 dark:text-yellow-200 text-sm transition-colors">
             <strong>Dicas de Mestre:</strong> Vender 3, 4 ou 5 cartas iguais
             garante uma ficha de bónus oculta! Além disso, quem tiver o maior
             rebanho de camelos no final da rodada recebe 5 Rúpias extras.
@@ -50,7 +50,7 @@ export default function HelpModal({ onClose }) {
         <div className="mt-8 text-center">
           <button
             onClick={onClose}
-            className="bg-emerald text-white font-bold py-3 px-8 rounded-xl shadow-md hover:bg-green-800 transition"
+            className="bg-emerald dark:bg-green-600 text-white font-bold py-3 px-8 rounded-xl shadow-md hover:bg-green-800 dark:hover:bg-green-500 transition-colors"
           >
             Entendido, Voltar ao Jogo!
           </button>
