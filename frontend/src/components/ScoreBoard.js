@@ -62,19 +62,31 @@ const MiniTokenBadge = ({ val, groupKey }) => {
 };
 
 export default function ScoreBoard({ myPlayer, opponent }) {
+  // Nova lógica para separar as somas visíveis das secretas
   const calculatePartial = (player, isOpponent) => {
-    let goodsSum = 0;
-    let bonusCount = 0;
+    let visibleSum = 0;
+    let secretSum = 0;
+    let secretCount = 0;
 
     player.tokens.forEach((token) => {
-      if (token.type === "good") goodsSum += token.value;
+      if (token.type === "good") {
+        visibleSum += token.value;
+      }
       if (token.type === "bonus") {
-        if (isOpponent) bonusCount++;
-        else goodsSum += token.value;
+        if (isOpponent) {
+          secretCount++;
+        } else {
+          secretSum += token.value;
+        }
       }
     });
 
-    return { goodsSum, bonusCount };
+    return {
+      visibleSum,
+      secretSum,
+      secretCount,
+      totalSum: visibleSum + secretSum,
+    };
   };
 
   const myScore = calculatePartial(myPlayer, false);
@@ -96,26 +108,41 @@ export default function ScoreBoard({ myPlayer, opponent }) {
       grouped[key].push(t);
     });
 
+    // Função auxiliar para quebrar as linhas a cada 7 fichas
+    const chunkArray = (arr, size) => {
+      const result = [];
+      for (let i = 0; i < arr.length; i += size) {
+        result.push(arr.slice(i, i + size));
+      }
+      return result;
+    };
+
     return (
-      // Envolve tudo numa coluna para que as categorias fiquem UMA EMBAIXO DA OUTRA
-      <div className="flex flex-col gap-1 mt-2">
-        {Object.keys(grouped).map((groupKey) => (
-          // Dentro da categoria, as fichas ficam LADO A LADO na horizontal
-          <div key={groupKey} className="flex flex-row items-center">
-            {grouped[groupKey].map((t, i) => {
-              const val = t.type === "bonus" && isOpponent ? "" : t.value;
-              return (
+      <div className="flex flex-col gap-2 mt-2">
+        {Object.keys(grouped).map((groupKey) => {
+          const chunks = chunkArray(grouped[groupKey], 7);
+
+          return (
+            <div key={groupKey} className="flex flex-col gap-1">
+              {chunks.map((chunk, chunkIdx) => (
+                // Espaçamento com gap-1 (lado a lado, sem sobrepor)
                 <div
-                  key={i}
-                  className={i > 0 ? "-ml-3" : ""}
-                  style={{ zIndex: i }}
+                  key={chunkIdx}
+                  className="flex flex-row items-center gap-1"
                 >
-                  <MiniTokenBadge val={val} groupKey={groupKey} />
+                  {chunk.map((t, i) => {
+                    const val = t.type === "bonus" && isOpponent ? "" : t.value;
+                    return (
+                      <div key={i}>
+                        <MiniTokenBadge val={val} groupKey={groupKey} />
+                      </div>
+                    );
+                  })}
                 </div>
-              );
-            })}
-          </div>
-        ))}
+              ))}
+            </div>
+          );
+        })}
       </div>
     );
   };
@@ -133,8 +160,12 @@ export default function ScoreBoard({ myPlayer, opponent }) {
               {myPlayer.name || "Você"}
             </span>
             <div className="flex items-center gap-1 text-sm font-display font-bold text-jaipur-green">
-              <FaCoins className="text-jaipur-gold text-xs" />{" "}
-              {myScore.goodsSum}
+              <FaCoins className="text-jaipur-gold text-xs" />
+              <span>{myScore.totalSum}</span>
+              {/* O Jogador vê o Total dele e o que é visível ao adversário */}
+              <span className="text-[9px] text-gray-500 font-bold ml-1">
+                ({myScore.visibleSum} visível)
+              </span>
             </div>
           </div>
           {renderMiniTokensGrouped(myPlayer.tokens, false)}
@@ -146,9 +177,10 @@ export default function ScoreBoard({ myPlayer, opponent }) {
               {opponent.name || "Oponente"}
             </span>
             <div className="flex items-center gap-1 text-sm font-display font-bold text-jaipur-red">
+              {/* Do oponente só vemos os pontos visíveis (sem os bónus) */}
               <FaCoins className="text-jaipur-gold text-xs" />{" "}
-              {oppScore.goodsSum}
-              {oppScore.bonusCount > 0 && (
+              {oppScore.visibleSum}
+              {oppScore.secretCount > 0 && (
                 <span className="text-[10px] ml-1 text-jaipur-red">
                   (+ bônus)
                 </span>
