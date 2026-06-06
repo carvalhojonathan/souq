@@ -92,6 +92,7 @@ export default function GameBoard({
         <div style={{ gridArea: "header" }}>
           <GameHeader
             opponentConnected={opponentConnected}
+            opponentName={opponent.name} // AQUI ESTÁ A MODIFICAÇÃO!
             onOpenHelp={() => setShowHelp(true)}
             onLeaveRoom={onLeaveRoom}
             isDarkMode={isDarkMode}

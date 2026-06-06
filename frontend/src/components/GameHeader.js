@@ -5,17 +5,29 @@ import {
   FaCircle,
   FaMoon,
   FaSun,
+  FaRobot,
 } from "react-icons/fa";
 
 export default function GameHeader({
   opponentConnected,
+  opponentName, // <--- Nova propriedade que recebe o nome do oponente
   onOpenHelp,
   onLeaveRoom,
   isDarkMode,
   toggleTheme,
 }) {
+  // Verifica se o oponente é a CPU pelo ícone que adicionámos no servidor
+  const isCPU = opponentName && opponentName.startsWith("🤖");
+
+  // Define o texto
+  let statusText = "Aguardando";
+  if (isCPU) {
+    statusText = opponentName.replace("🤖 ", ""); // Remove o emoji e deixa só a dificuldade
+  } else if (opponentConnected) {
+    statusText = "Multiplayer";
+  }
+
   return (
-    // Removido o dark:bg-green-900 para manter a cor original!
     <div className="bg-jaipur-green p-2 md:p-3 rounded-xl shadow-md border-2 border-jaipur-gold flex items-center justify-between mb-2 transition-colors">
       <div className="flex items-center">
         <img
@@ -29,22 +41,29 @@ export default function GameHeader({
         <div
           className="flex items-center gap-1.5 bg-white bg-opacity-95 dark:bg-gray-800 px-2 md:px-3 py-1 md:py-1.5 rounded-full shadow-inner transition-colors"
           title={
-            opponentConnected ? "Oponente conectado" : "Oponente desconectado"
+            isCPU
+              ? "Modo Solo"
+              : opponentConnected
+                ? "Oponente conectado"
+                : "Oponente desconectado"
           }
         >
-          <FaCircle
-            className={`text-[10px] md:text-xs ${
-              opponentConnected
-                ? "text-green-500 shadow-[0_0_5px_rgba(34,197,94,0.5)]"
-                : "text-red-500 animate-pulse"
-            } rounded-full`}
-          />
+          {isCPU ? (
+            <FaRobot className="text-jaipur-gold text-sm drop-shadow-sm" />
+          ) : (
+            <FaCircle
+              className={`text-[10px] md:text-xs ${
+                opponentConnected
+                  ? "text-green-500 shadow-[0_0_5px_rgba(34,197,94,0.5)]"
+                  : "text-red-500 animate-pulse"
+              } rounded-full`}
+            />
+          )}
           <span className="text-[10px] md:text-xs font-bold text-gray-800 dark:text-gray-200 hidden sm:block uppercase tracking-wider mt-px transition-colors">
-            {opponentConnected ? "Online" : "Aguardando"}
+            {statusText}
           </span>
         </div>
 
-        {/* BOTÃO DE TEMA SUPER DESTACADO */}
         <button
           onClick={toggleTheme}
           className="flex items-center justify-center w-8 h-8 md:w-10 md:h-10 rounded-full bg-black bg-opacity-20 dark:bg-white dark:bg-opacity-20 text-white hover:scale-110 transition-transform drop-shadow-md border border-white border-opacity-30"

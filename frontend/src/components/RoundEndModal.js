@@ -17,10 +17,10 @@ export default function RoundEndModal({
 }) {
   if (!stats || !players) return null;
 
-  // Identifica quem é o anfitrião (O primeiro jogador a entrar na sala)
-  const hostId = Object.keys(players)[0];
-  const isHost = myId === hostId;
   const opponentId = Object.keys(players).find((id) => id !== myId);
+
+  // CORREÇÃO: Força que você tenha os privilégios de anfitrião se o oponente for a CPU
+  const isHost = myId === Object.keys(players)[0] || opponentId === "CPU";
 
   const myName = players[myId]?.name || "Você";
   const oppName =
