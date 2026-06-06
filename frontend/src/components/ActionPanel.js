@@ -61,8 +61,20 @@ export default function ActionPanel({
             : "bg-gray-100 dark:bg-gray-700 border-gray-300 dark:border-gray-600 text-gray-500 dark:text-gray-400"
         }`}
       >
-        <span className="text-[9px] md:text-[10px] font-bold text-center uppercase leading-tight tracking-wider">
-          {isMyTurn ? "SUA VEZ" : "AGUARDANDO OPONENTE"}
+        <span className="text-[10px] md:text-[11px] font-bold text-center uppercase leading-tight tracking-wider">
+          {isMyTurn ? (
+            <>
+              SUA
+              <br />
+              VEZ
+            </>
+          ) : (
+            <>
+              AGUARDANDO
+              <br />
+              OPONENTE
+            </>
+          )}
         </span>
       </div>
 
@@ -79,7 +91,7 @@ export default function ActionPanel({
           }`}
         >
           <FaHandPaper className="text-sm md:text-lg flex-shrink-0" />
-          <span className="text-[8px] md:text-[10px] font-bold text-left leading-tight">
+          <span className="text-[10px] md:text-xs font-bold text-left leading-tight">
             Comprar
             <br className="md:hidden" />{" "}
             <span className="hidden md:inline"></span>1 Carta
@@ -96,7 +108,7 @@ export default function ActionPanel({
           }`}
         >
           <FaStore className="text-sm md:text-lg flex-shrink-0" />
-          <span className="text-[8px] md:text-[10px] font-bold text-left leading-tight">
+          <span className="text-[10px] md:text-xs font-bold text-left leading-tight">
             Comprar
             <br className="md:hidden" />{" "}
             <span className="hidden md:inline"></span>Camelos
@@ -119,7 +131,7 @@ export default function ActionPanel({
           }`}
         >
           <FaExchangeAlt className="text-sm md:text-lg flex-shrink-0" />
-          <span className="text-[8px] md:text-[10px] font-bold text-left leading-tight">
+          <span className="text-[10px] md:text-xs font-bold text-left leading-tight">
             Trocar
             <br className="md:hidden" />{" "}
             <span className="hidden md:inline"></span>Cartas
@@ -138,7 +150,7 @@ export default function ActionPanel({
           }`}
         >
           <FaCoins className="text-sm md:text-lg flex-shrink-0" />
-          <span className="text-[8px] md:text-[10px] font-bold text-left leading-tight">
+          <span className="text-[10px] md:text-xs font-bold text-left leading-tight">
             Vender
             <br className="md:hidden" />{" "}
             <span className="hidden md:inline"></span>Mercad.
