@@ -1,14 +1,21 @@
 import React from "react";
-import { FaQuestionCircle, FaSignOutAlt, FaCircle } from "react-icons/fa";
+import {
+  FaQuestionCircle,
+  FaSignOutAlt,
+  FaCircle,
+  FaMoon,
+  FaSun,
+} from "react-icons/fa";
 
 export default function GameHeader({
   opponentConnected,
   onOpenHelp,
   onLeaveRoom,
+  isDarkMode,
+  toggleTheme,
 }) {
   return (
-    <div className="bg-jaipur-green p-2 md:p-3 rounded-xl shadow-md border-2 border-jaipur-gold flex items-center justify-between mb-2">
-      {/* 1. LOGO: Agora usando a versão horizontal */}
+    <div className="bg-jaipur-green dark:bg-green-900 p-2 md:p-3 rounded-xl shadow-md border-2 border-jaipur-gold flex items-center justify-between mb-2 transition-colors">
       <div className="flex items-center">
         <img
           src="/images/logo-horizontal.png"
@@ -17,11 +24,9 @@ export default function GameHeader({
         />
       </div>
 
-      {/* 2. STATUS E BOTÕES */}
       <div className="flex items-center gap-3">
-        {/* Status de Conexão do Oponente */}
         <div
-          className="flex items-center gap-1.5 bg-white bg-opacity-95 px-2 md:px-3 py-1 md:py-1.5 rounded-full shadow-inner"
+          className="flex items-center gap-1.5 bg-white bg-opacity-95 dark:bg-gray-800 px-2 md:px-3 py-1 md:py-1.5 rounded-full shadow-inner"
           title={
             opponentConnected ? "Oponente conectado" : "Oponente desconectado"
           }
@@ -33,12 +38,24 @@ export default function GameHeader({
                 : "text-red-500 animate-pulse"
             } rounded-full`}
           />
-          <span className="text-[10px] md:text-xs font-bold text-gray-800 hidden sm:block uppercase tracking-wider mt-px">
+          <span className="text-[10px] md:text-xs font-bold text-gray-800 dark:text-gray-200 hidden sm:block uppercase tracking-wider mt-px">
             {opponentConnected ? "Online" : "Aguardando"}
           </span>
         </div>
 
-        {/* Botão de Regras (Agora em branco por causa do fundo verde) */}
+        {/* BOTÃO DE TEMA SUPER DESTACADO */}
+        <button
+          onClick={toggleTheme}
+          className="flex items-center justify-center w-8 h-8 md:w-10 md:h-10 rounded-full bg-black bg-opacity-20 dark:bg-white dark:bg-opacity-20 text-white hover:scale-110 transition-transform drop-shadow-md border border-white border-opacity-30"
+          title="Alternar Tema"
+        >
+          {isDarkMode ? (
+            <FaSun className="text-lg md:text-xl text-yellow-300" />
+          ) : (
+            <FaMoon className="text-lg md:text-xl text-white" />
+          )}
+        </button>
+
         <button
           onClick={onOpenHelp}
           className="text-white hover:text-jaipur-gold transition-colors text-xl md:text-2xl p-1 drop-shadow-md"
@@ -47,7 +64,6 @@ export default function GameHeader({
           <FaQuestionCircle />
         </button>
 
-        {/* Botão de Sair (Agora em branco) */}
         <button
           onClick={onLeaveRoom}
           className="text-white hover:text-red-300 transition-colors text-xl md:text-2xl p-1 drop-shadow-md"

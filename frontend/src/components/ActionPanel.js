@@ -23,9 +23,7 @@ export default function ActionPanel({
   const selectedMarketCamels = selectedMarket.filter(
     (c) => c === "camel",
   ).length;
-  // const selectedMarketGoods = selectedMarket.filter(c => c !== 'camel').length;
 
-  // VERIFICAÇÃO DE LIMITE DE CARTAS (Impede o bug das 7 cartas)
   const expectedHandSizeAfterTrade =
     myPlayer.hand.length + selectedMarket.length - selectedHand.length;
 
@@ -34,12 +32,12 @@ export default function ActionPanel({
     selectedMarket[0] !== "camel" &&
     selectedTotalToTrade === 0 &&
     myPlayer.hand.length < 7;
+
   const canTakeCamels =
     selectedMarket.length > 0 &&
     selectedMarket.every((c) => c === "camel") &&
     selectedTotalToTrade === 0;
 
-  // O botão só ativa se a mão resultante for 7 ou menos
   const canTrade =
     selectedMarket.length > 1 &&
     selectedMarket.length === selectedTotalToTrade &&
@@ -55,9 +53,13 @@ export default function ActionPanel({
       selectedHand.length >= 2);
 
   return (
-    <div className="bg-white p-2 rounded-lg shadow-sm border border-jaipur-gold flex items-stretch h-full gap-2">
+    <div className="bg-white dark:bg-gray-800 p-2 rounded-lg shadow-sm border border-jaipur-gold dark:border-gray-700 flex items-stretch h-full gap-2 transition-colors">
       <div
-        className={`flex flex-col items-center justify-center p-2 rounded border-2 w-[80px] md:w-[100px] flex-shrink-0 transition-colors shadow-sm ${isMyTurn ? "bg-jaipur-green border-green-700 text-white animate-pulse" : "bg-gray-100 border-gray-300 text-gray-500"}`}
+        className={`flex flex-col items-center justify-center p-2 rounded border-2 w-[80px] md:w-[100px] flex-shrink-0 transition-colors shadow-sm ${
+          isMyTurn
+            ? "bg-jaipur-green border-green-700 text-white animate-pulse"
+            : "bg-gray-100 dark:bg-gray-700 border-gray-300 dark:border-gray-600 text-gray-500 dark:text-gray-400"
+        }`}
       >
         <span className="text-[9px] md:text-[10px] font-bold text-center uppercase leading-tight tracking-wider">
           {isMyTurn ? "SUA VEZ" : "AGUARDANDO OPONENTE"}
@@ -70,7 +72,11 @@ export default function ActionPanel({
             handleAction("TAKE_ONE", { marketIndex: selectedMarketIndices[0] })
           }
           disabled={!isMyTurn || !canTakeOne}
-          className={`flex flex-col items-center justify-center py-1.5 px-1 rounded border-2 transition-all shadow-sm touch-none ${isMyTurn && canTakeOne ? "border-blue-500 bg-blue-50 text-blue-700 hover:bg-blue-100" : "border-gray-200 bg-gray-50 text-gray-400 opacity-50"}`}
+          className={`flex flex-col items-center justify-center py-1.5 px-1 rounded border-2 transition-all shadow-sm touch-none ${
+            isMyTurn && canTakeOne
+              ? "border-blue-500 bg-blue-50 dark:bg-blue-900/30 dark:border-blue-400 text-blue-700 dark:text-blue-300 hover:bg-blue-100 dark:hover:bg-blue-900/50"
+              : "border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-800 text-gray-400 dark:text-gray-500 opacity-50"
+          }`}
         >
           <FaHandPaper className="text-sm md:text-lg mb-0.5" />
           <span className="text-[8px] md:text-[10px] font-bold text-center leading-tight">
@@ -82,7 +88,11 @@ export default function ActionPanel({
         <button
           onClick={() => handleAction("TAKE_CAMELS", {})}
           disabled={!isMyTurn || !canTakeCamels}
-          className={`flex flex-col items-center justify-center py-1.5 px-1 rounded border-2 transition-all shadow-sm touch-none ${isMyTurn && canTakeCamels ? "border-yellow-500 bg-yellow-50 text-yellow-700 hover:bg-yellow-100" : "border-gray-200 bg-gray-50 text-gray-400 opacity-50"}`}
+          className={`flex flex-col items-center justify-center py-1.5 px-1 rounded border-2 transition-all shadow-sm touch-none ${
+            isMyTurn && canTakeCamels
+              ? "border-yellow-500 bg-yellow-50 dark:bg-yellow-900/30 dark:border-yellow-500 text-yellow-700 dark:text-yellow-400 hover:bg-yellow-100 dark:hover:bg-yellow-900/50"
+              : "border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-800 text-gray-400 dark:text-gray-500 opacity-50"
+          }`}
         >
           <FaStore className="text-sm md:text-lg mb-0.5" />
           <span className="text-[8px] md:text-[10px] font-bold text-center leading-tight">
@@ -101,7 +111,11 @@ export default function ActionPanel({
             })
           }
           disabled={!isMyTurn || !canTrade}
-          className={`flex flex-col items-center justify-center py-1.5 px-1 rounded border-2 transition-all shadow-sm touch-none ${isMyTurn && canTrade ? "border-purple-500 bg-purple-50 text-purple-700 hover:bg-purple-100" : "border-gray-200 bg-gray-50 text-gray-400 opacity-50"}`}
+          className={`flex flex-col items-center justify-center py-1.5 px-1 rounded border-2 transition-all shadow-sm touch-none ${
+            isMyTurn && canTrade
+              ? "border-purple-500 bg-purple-50 dark:bg-purple-900/30 dark:border-purple-400 text-purple-700 dark:text-purple-300 hover:bg-purple-100 dark:hover:bg-purple-900/50"
+              : "border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-800 text-gray-400 dark:text-gray-500 opacity-50"
+          }`}
         >
           <FaExchangeAlt className="text-sm md:text-lg mb-0.5" />
           <span className="text-[8px] md:text-[10px] font-bold text-center leading-tight">
@@ -116,7 +130,11 @@ export default function ActionPanel({
             handleAction("SELL_GOODS", { handIndices: selectedHandIndices })
           }
           disabled={!isMyTurn || !canSell}
-          className={`flex flex-col items-center justify-center py-1.5 px-1 rounded border-2 transition-all shadow-sm touch-none ${isMyTurn && canSell ? "border-jaipur-green bg-green-50 text-jaipur-green hover:bg-green-100" : "border-gray-200 bg-gray-50 text-gray-400 opacity-50"}`}
+          className={`flex flex-col items-center justify-center py-1.5 px-1 rounded border-2 transition-all shadow-sm touch-none ${
+            isMyTurn && canSell
+              ? "border-jaipur-green bg-green-50 dark:bg-green-900/30 dark:border-green-500 text-jaipur-green dark:text-green-400 hover:bg-green-100 dark:hover:bg-green-900/50"
+              : "border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-800 text-gray-400 dark:text-gray-500 opacity-50"
+          }`}
         >
           <FaCoins className="text-sm md:text-lg mb-0.5" />
           <span className="text-[8px] md:text-[10px] font-bold text-center leading-tight">

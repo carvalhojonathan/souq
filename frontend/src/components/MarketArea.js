@@ -15,9 +15,10 @@ export default function MarketArea({
 
   return (
     <div
-      className={`bg-desert-base p-3 rounded-lg shadow-inner border border-desert-dark flex flex-col items-center ${className}`}
+      // AQUI: dark:bg-gray-800 e dark:border-gray-700
+      className={`bg-desert-base dark:bg-gray-800 p-3 rounded-lg shadow-inner border border-desert-dark dark:border-gray-700 flex flex-col items-center transition-colors ${className}`}
     >
-      <h2 className="font-display font-bold text-sm text-gray-800 mb-3 tracking-widest uppercase">
+      <h2 className="font-display font-bold text-sm text-gray-800 dark:text-gray-300 mb-3 tracking-widest uppercase">
         Mercado
       </h2>
 
@@ -37,7 +38,7 @@ export default function MarketArea({
                 </div>
               </>
             ) : (
-              <div className="w-[76px] h-[100px] md:w-[90px] md:h-[117px] lg:w-[100px] lg:h-[130px] border-2 border-dashed border-gray-400 rounded-lg flex items-center justify-center bg-gray-200 bg-opacity-50 text-gray-400 text-[10px]">
+              <div className="w-[76px] h-[100px] md:w-[90px] md:h-[117px] lg:w-[100px] lg:h-[130px] border-2 border-dashed border-gray-400 dark:border-gray-600 rounded-lg flex items-center justify-center bg-gray-200 dark:bg-gray-700 bg-opacity-50 text-gray-400 dark:text-gray-400 text-[10px]">
                 Esgotado
               </div>
             )}
@@ -45,7 +46,7 @@ export default function MarketArea({
         </div>
 
         {/* Mercado Central */}
-        <div className="flex gap-1 p-2 bg-white bg-opacity-40 rounded shadow-sm border border-white border-opacity-50">
+        <div className="flex gap-1 p-2 bg-white dark:bg-gray-700 bg-opacity-40 dark:bg-opacity-50 rounded shadow-sm border border-white dark:border-gray-600 border-opacity-50">
           {marketCards.map((cardType, index) => (
             <Card
               key={`market-card-${index}`}
@@ -59,7 +60,7 @@ export default function MarketArea({
           {Array.from({ length: 5 - marketCards.length }).map((_, index) => (
             <div
               key={`empty-market-${index}`}
-              className="w-[76px] h-[100px] md:w-[90px] md:h-[117px] lg:w-[100px] lg:h-[130px] border border-dashed border-gray-400 rounded bg-transparent"
+              className="w-[76px] h-[100px] md:w-[90px] md:h-[117px] lg:w-[100px] lg:h-[130px] border border-dashed border-gray-400 dark:border-gray-600 rounded bg-transparent"
             ></div>
           ))}
         </div>
@@ -68,14 +69,13 @@ export default function MarketArea({
         <div className="flex flex-col items-center">
           <div className="relative">
             {topDiscard ? (
-              // Nova regra ativada (isDiscard={true}) para deixar em p/b, borrado e com contador no centro
               <Card
                 type={topDiscard}
                 isDiscard={true}
                 count={discardPile.length}
               />
             ) : (
-              <div className="w-[76px] h-[100px] md:w-[90px] md:h-[117px] lg:w-[100px] lg:h-[130px] border-2 border-dashed border-gray-400 rounded-lg flex items-center justify-center bg-gray-200 bg-opacity-50 text-gray-400 text-[10px]">
+              <div className="w-[76px] h-[100px] md:w-[90px] md:h-[117px] lg:w-[100px] lg:h-[130px] border-2 border-dashed border-gray-400 dark:border-gray-600 rounded-lg flex items-center justify-center bg-gray-200 dark:bg-gray-700 bg-opacity-50 text-gray-400 dark:text-gray-400 text-[10px]">
                 Vazio
               </div>
             )}

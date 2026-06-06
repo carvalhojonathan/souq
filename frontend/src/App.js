@@ -37,7 +37,6 @@ function App() {
   const [errorMsg, setErrorMsg] = useState("");
   const isManualAction = useRef(false);
 
-  // Aplica a classe 'dark' no HTML assim que o estado muda
   useEffect(() => {
     if (isDarkMode) {
       document.documentElement.classList.add("dark");
@@ -146,8 +145,8 @@ function App() {
   };
 
   return (
-    <div className="min-h-screen bg-gray-50 dark:bg-gray-900 transition-colors duration-300 text-gray-800 dark:text-gray-100 font-body">
-      {/* Botão de Tema para as telas fora do jogo */}
+    // CORREÇÃO: Fundo original amarelado restaurado (bg-[#fcf8e8])
+    <div className="min-h-screen bg-[#fcf8e8] dark:bg-gray-900 transition-colors duration-300 text-gray-800 dark:text-gray-100 font-body">
       {!inGame && (
         <button
           onClick={toggleTheme}

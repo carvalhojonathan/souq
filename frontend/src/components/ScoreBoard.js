@@ -34,7 +34,7 @@ const MiniTokenBadge = ({ val, groupKey }) => {
 
   if (imgSrc && !imgError) {
     return (
-      <div className="flex flex-col items-center bg-white rounded-full p-0.5 shadow-sm">
+      <div className="flex flex-col items-center bg-white dark:bg-gray-700 rounded-full p-0.5 shadow-sm transition-colors">
         <img
           src={imgSrc}
           alt={groupKey}
@@ -43,7 +43,7 @@ const MiniTokenBadge = ({ val, groupKey }) => {
           style={{ imageRendering: "-webkit-optimize-contrast" }}
         />
         {val !== "" && (
-          <span className="text-[9px] font-bold mt-[2px] leading-none text-gray-700">
+          <span className="text-[9px] font-bold mt-[2px] leading-none text-gray-700 dark:text-gray-200 transition-colors">
             {val}
           </span>
         )}
@@ -93,7 +93,11 @@ export default function ScoreBoard({ myPlayer, opponent }) {
 
   const renderMiniTokensGrouped = (tokens, isOpponent) => {
     if (tokens.length === 0)
-      return <span className="text-[10px] text-gray-400">Nenhuma ficha</span>;
+      return (
+        <span className="text-[10px] text-gray-400 dark:text-gray-500">
+          Nenhuma ficha
+        </span>
+      );
 
     const grouped = {};
     tokens.forEach((t) => {
@@ -145,23 +149,22 @@ export default function ScoreBoard({ myPlayer, opponent }) {
   };
 
   return (
-    <div className="bg-white p-3 rounded-lg shadow-sm border border-jaipur-gold flex flex-col h-full overflow-y-auto">
-      <h3 className="text-[10px] font-bold text-gray-600 uppercase tracking-widest border-b border-gray-300 pb-1 mb-2 flex items-center gap-1">
+    <div className="bg-white dark:bg-gray-800 p-3 rounded-lg shadow-sm border border-jaipur-gold dark:border-gray-700 flex flex-col h-full overflow-y-auto transition-colors">
+      <h3 className="text-[10px] font-bold text-gray-600 dark:text-gray-300 uppercase tracking-widest border-b border-gray-300 dark:border-gray-600 pb-1 mb-2 flex items-center gap-1 transition-colors">
         🏆 Placar Parcial
       </h3>
 
       <div className="flex flex-col gap-2 mt-1">
-        <div className="bg-white p-2 rounded border-2 border-jaipur-green bg-opacity-50">
+        <div className="bg-white dark:bg-gray-800 p-2 rounded border-2 border-jaipur-green dark:border-green-600/50 bg-opacity-50 dark:bg-opacity-100 transition-colors">
           <div className="flex justify-between items-center mb-1">
-            <span className="text-[10px] uppercase font-bold text-jaipur-green">
+            <span className="text-[10px] uppercase font-bold text-jaipur-green dark:text-green-400">
               {myPlayer.name || "Você"}
             </span>
-            <div className="flex items-center gap-1 text-sm font-display font-bold text-jaipur-green">
+            <div className="flex items-center gap-1 text-sm font-display font-bold text-jaipur-green dark:text-green-400">
               <FaCoins className="text-jaipur-gold text-xs" />
               <span>{myScore.totalSum}</span>
-              {/* Ajuste feito aqui: texto aumentado para text-xs e "visível" removido */}
               <span
-                className="text-xs text-gray-500 font-bold ml-1"
+                className="text-xs text-gray-500 dark:text-gray-400 font-bold ml-1 transition-colors"
                 title="Pontos visíveis para o oponente"
               >
                 ({myScore.visibleSum})
@@ -171,16 +174,16 @@ export default function ScoreBoard({ myPlayer, opponent }) {
           {renderMiniTokensGrouped(myPlayer.tokens, false)}
         </div>
 
-        <div className="bg-white p-2 rounded border-2 border-jaipur-red bg-opacity-50">
+        <div className="bg-white dark:bg-gray-800 p-2 rounded border-2 border-jaipur-red dark:border-red-600/50 bg-opacity-50 dark:bg-opacity-100 transition-colors">
           <div className="flex justify-between items-center mb-1">
-            <span className="text-[10px] uppercase font-bold text-jaipur-red">
+            <span className="text-[10px] uppercase font-bold text-jaipur-red dark:text-red-400">
               {opponent.name || "Oponente"}
             </span>
-            <div className="flex items-center gap-1 text-sm font-display font-bold text-jaipur-red">
+            <div className="flex items-center gap-1 text-sm font-display font-bold text-jaipur-red dark:text-red-400">
               <FaCoins className="text-jaipur-gold text-xs" />{" "}
               {oppScore.visibleSum}
               {oppScore.secretCount > 0 && (
-                <span className="text-[10px] ml-1 text-jaipur-red">
+                <span className="text-[10px] ml-1 text-jaipur-red dark:text-red-400">
                   (+ bônus)
                 </span>
               )}
