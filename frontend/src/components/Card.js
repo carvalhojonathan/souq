@@ -117,9 +117,9 @@ export default function Card({
         </div>
       )}
 
-      {/* Monte de Descarte: Número grande no centro */}
+      {/* Monte de Descarte: Número no centro reduzido para text-2xl */}
       {isDiscard && count !== undefined && (
-        <span className="absolute inset-0 flex items-center justify-center text-5xl font-display font-bold text-white drop-shadow-[0_2px_4px_rgba(0,0,0,1)] z-10 pointer-events-none">
+        <span className="absolute inset-0 flex items-center justify-center text-2xl font-display font-bold text-white drop-shadow-[0_2px_4px_rgba(0,0,0,1)] z-10 pointer-events-none">
           {count}
         </span>
       )}

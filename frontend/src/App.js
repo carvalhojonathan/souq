@@ -1,11 +1,10 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useRef } from "react";
 import { io } from "socket.io-client";
 import { motion, AnimatePresence } from "framer-motion";
 import GameBoard from "./components/GameBoard";
 
-// Detecta automaticamente se está no computador local ou na internet
 const socketUrl =
-  window.location.hostname === "localhost" ? "http://localhost:3000" : "/"; // Na internet, conecta-se ao próprio domínio
+  window.location.hostname === "localhost" ? "http://localhost:3000" : "/";
 
 const socket = io(socketUrl);
 
@@ -29,11 +28,12 @@ function App() {
   const [gameState, setGameState] = useState(null);
   const [opponentConnected, setOpponentConnected] = useState(false);
 
-  // Modais de UI
   const [showLeaveModal, setShowLeaveModal] = useState(false);
-  const [errorMsg, setErrorMsg] = useState(""); // Substitui os 'alerts' nativos
+  const [errorMsg, setErrorMsg] = useState("");
 
-  // Sincronização básica com LocalStorage
+  // Referência para saber se o utilizador clicou ativamente ou se é auto-reconexão
+  const isManualAction = useRef(false);
+
   useEffect(() => {
     localStorage.setItem("jaipur_playerName", playerName);
     localStorage.setItem("jaipur_roomId", roomId);
@@ -42,14 +42,12 @@ function App() {
     localStorage.setItem("jaipur_isWaiting", isWaiting);
   }, [playerName, roomId, joinCode, inGame, isWaiting]);
 
-  // Reconexão automática ao dar F5
   useEffect(() => {
     if ((inGame || isWaiting) && roomId && playerName) {
       socket.emit("joinRoom", { roomId, playerName });
     }
   }, []);
 
-  // Limpa tudo, desliga a partida e zera o LocalStorage
   const resetToLobby = () => {
     setInGame(false);
     setIsWaiting(false);
@@ -59,7 +57,6 @@ function App() {
     setOpponentConnected(false);
     setShowLeaveModal(false);
 
-    // Forçar limpeza do histórico de reconexão do LocalStorage
     localStorage.removeItem("jaipur_roomId");
     localStorage.removeItem("jaipur_joinCode");
     localStorage.removeItem("jaipur_inGame");
@@ -80,9 +77,15 @@ function App() {
       setGameState(newState);
     });
 
-    // Tratamento de mensagens do Servidor
     socket.on("errorMsg", (msg) => {
-      setErrorMsg(msg); // Exibe o pop-up bonito em vez do alert()
+      // CORREÇÃO MÁGICA: Se for "sala não encontrada" na inicialização (sem o user clicar),
+      // falha silenciosamente sem mostrar o pop-up, limpando apenas o LocalStorage.
+      if (!isManualAction.current && msg.includes("não encontrada")) {
+        resetToLobby();
+        return;
+      }
+
+      setErrorMsg(msg);
       if (
         msg.includes("encerrada") ||
         msg.includes("não encontrada") ||
@@ -93,7 +96,7 @@ function App() {
     });
 
     socket.on("opponentDisconnected", () => {
-      setErrorMsg("O oponente saiu da sala ou a sala foi encerrada.");
+      setErrorMsg("O oponente saiu da sala ou a partida foi encerrada.");
       resetToLobby();
     });
 
@@ -107,6 +110,7 @@ function App() {
   }, []);
 
   const createRoom = () => {
+    isManualAction.current = true; // Regista que foi ação do jogador
     if (playerName.trim() === "")
       return setErrorMsg("Por favor, digite o seu nome primeiro.");
     const randomCode = Math.floor(1000 + Math.random() * 9000).toString();
@@ -114,6 +118,7 @@ function App() {
   };
 
   const joinRoom = () => {
+    isManualAction.current = true; // Regista que foi ação do jogador
     if (playerName.trim() === "")
       return setErrorMsg("Por favor, digite o seu nome primeiro.");
     if (joinCode.trim() === "")
@@ -122,7 +127,6 @@ function App() {
     socket.emit("joinRoom", { roomId: joinCode, playerName });
   };
 
-  // Controlos do Pop-up de Saída
   const requestLeaveRoom = () => setShowLeaveModal(true);
   const cancelLeaveRoom = () => setShowLeaveModal(false);
   const confirmLeaveRoom = () => {
@@ -132,7 +136,6 @@ function App() {
 
   return (
     <>
-      {/* POP-UP DE MENSAGENS E ERROS (Sala Cheia, Não encontrada, etc) */}
       <AnimatePresence>
         {errorMsg !== "" && (
           <motion.div
@@ -162,7 +165,6 @@ function App() {
         )}
       </AnimatePresence>
 
-      {/* POP-UP DE CONFIRMAÇÃO DE SAÍDA */}
       <AnimatePresence>
         {showLeaveModal && (
           <motion.div
@@ -203,7 +205,6 @@ function App() {
         )}
       </AnimatePresence>
 
-      {/* RENDERIZAÇÃO DO TABULEIRO */}
       {inGame && gameState ? (
         <div className="min-h-screen p-2 md:p-4 font-body text-gray-800">
           <GameBoard
@@ -215,7 +216,6 @@ function App() {
           />
         </div>
       ) : isWaiting ? (
-        /* RENDERIZAÇÃO DA TELA DE ESPERA (LOBBY) */
         <div className="min-h-screen flex flex-col items-center justify-center p-4 font-body">
           <div className="bg-white p-8 md:p-12 rounded-xl shadow-2xl text-center border-t-8 border-jaipur-green relative max-w-md w-full">
             <motion.button
@@ -225,22 +225,17 @@ function App() {
             >
               X Cancelar
             </motion.button>
-
-            {/* LOGO ADICIONADA AO LOBBY */}
             <img
               src="/images/logo.png"
               alt="Rota dos Camelos"
               className="h-28 mx-auto mb-6 object-contain drop-shadow-md"
             />
-
             <h2 className="text-2xl md:text-3xl font-display font-bold text-gray-800 mb-2 animate-pulse">
               ⏳ Aguardando...
             </h2>
             <p className="text-gray-600 font-bold mb-6 text-sm">
               A sua sala está pronta. Partilhe o código abaixo:
             </p>
-
-            {/* DESIGN DO CÓDIGO MELHORADO */}
             <div className="bg-desert-light py-4 rounded-lg border border-desert-dark mb-2">
               <div className="text-5xl font-display font-bold text-jaipur-green tracking-widest drop-shadow-sm">
                 {roomId}
@@ -249,7 +244,6 @@ function App() {
           </div>
         </div>
       ) : (
-        /* RENDERIZAÇÃO DO MENU INICIAL */
         <div className="min-h-screen flex flex-col items-center justify-center p-4 font-body">
           <div className="bg-white p-8 rounded-xl shadow-2xl max-w-md w-full border-t-8 border-jaipur-green text-center">
             <img
@@ -257,12 +251,9 @@ function App() {
               alt="Rota dos Camelos"
               className="h-48 md:h-64 mx-auto mb-2 object-contain drop-shadow-md"
             />
-
-            {/* FRASE ATUALIZADA */}
             <p className="text-gray-600 mb-8 font-bold">
               O mercado te aguarda!
             </p>
-
             <div className="flex flex-col gap-4">
               <input
                 type="text"
@@ -272,7 +263,6 @@ function App() {
                 value={playerName}
                 onChange={(e) => setPlayerName(e.target.value)}
               />
-
               <motion.button
                 whileTap={{ scale: 0.95 }}
                 onClick={createRoom}
@@ -280,7 +270,6 @@ function App() {
               >
                 🌟 Criar Nova Sala
               </motion.button>
-
               <div className="flex items-center my-2">
                 <div className="flex-grow border-t border-gray-300"></div>
                 <span className="px-3 text-gray-400 text-sm font-bold">
@@ -288,7 +277,6 @@ function App() {
                 </span>
                 <div className="flex-grow border-t border-gray-300"></div>
               </div>
-
               <div className="flex gap-2">
                 <input
                   type="text"

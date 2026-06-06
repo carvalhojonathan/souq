@@ -62,7 +62,6 @@ const MiniTokenBadge = ({ val, groupKey }) => {
 };
 
 export default function ScoreBoard({ myPlayer, opponent }) {
-  // Nova lógica para separar as somas visíveis das secretas
   const calculatePartial = (player, isOpponent) => {
     let visibleSum = 0;
     let secretSum = 0;
@@ -108,7 +107,6 @@ export default function ScoreBoard({ myPlayer, opponent }) {
       grouped[key].push(t);
     });
 
-    // Função auxiliar para quebrar as linhas a cada 7 fichas
     const chunkArray = (arr, size) => {
       const result = [];
       for (let i = 0; i < arr.length; i += size) {
@@ -125,7 +123,6 @@ export default function ScoreBoard({ myPlayer, opponent }) {
           return (
             <div key={groupKey} className="flex flex-col gap-1">
               {chunks.map((chunk, chunkIdx) => (
-                // Espaçamento com gap-1 (lado a lado, sem sobrepor)
                 <div
                   key={chunkIdx}
                   className="flex flex-row items-center gap-1"
@@ -162,9 +159,12 @@ export default function ScoreBoard({ myPlayer, opponent }) {
             <div className="flex items-center gap-1 text-sm font-display font-bold text-jaipur-green">
               <FaCoins className="text-jaipur-gold text-xs" />
               <span>{myScore.totalSum}</span>
-              {/* O Jogador vê o Total dele e o que é visível ao adversário */}
-              <span className="text-[9px] text-gray-500 font-bold ml-1">
-                ({myScore.visibleSum} visível)
+              {/* Ajuste feito aqui: texto aumentado para text-xs e "visível" removido */}
+              <span
+                className="text-xs text-gray-500 font-bold ml-1"
+                title="Pontos visíveis para o oponente"
+              >
+                ({myScore.visibleSum})
               </span>
             </div>
           </div>
@@ -177,7 +177,6 @@ export default function ScoreBoard({ myPlayer, opponent }) {
               {opponent.name || "Oponente"}
             </span>
             <div className="flex items-center gap-1 text-sm font-display font-bold text-jaipur-red">
-              {/* Do oponente só vemos os pontos visíveis (sem os bónus) */}
               <FaCoins className="text-jaipur-gold text-xs" />{" "}
               {oppScore.visibleSum}
               {oppScore.secretCount > 0 && (
