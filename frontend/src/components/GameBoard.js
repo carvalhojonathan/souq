@@ -76,11 +76,14 @@ export default function GameBoard({
   return (
     <>
       {showHelp && <HelpModal onClose={() => setShowHelp(false)} />}
+
       {gameState.roundEndStats && (
         <RoundEndModal
           stats={gameState.roundEndStats}
           myId={myId}
+          players={gameState.players}
           onNextRound={handleNextRound}
+          onLeaveRoom={onLeaveRoom}
         />
       )}
 

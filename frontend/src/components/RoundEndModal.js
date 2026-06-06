@@ -1,43 +1,54 @@
 import React from "react";
 import { motion } from "framer-motion";
-import { FaCoins } from "react-icons/fa";
+import {
+  FaCoins,
+  FaAward,
+  FaHome,
+  FaArrowRight,
+  FaHourglassHalf,
+} from "react-icons/fa";
+import { GiCamel } from "react-icons/gi";
 
-export default function RoundEndModal({ stats, myId, players, onNextRound }) {
-  if (!stats) return null;
+export default function RoundEndModal({
+  stats,
+  myId,
+  players,
+  onNextRound,
+  onLeaveRoom,
+}) {
+  if (!stats || !players) return null;
 
-  // CORREÇÃO: Extraímos os IDs diretamente dos pontos enviados pelo servidor.
-  // Assim, o modal nunca mais fica invisível mesmo que falte algum dado extra!
-  const ids = stats.scores ? Object.keys(stats.scores) : [];
-  const opponentId = ids.find((id) => id !== myId);
+  // Identifica quem é o anfitrião (O primeiro jogador a entrar na sala)
+  const hostId = Object.keys(players)[0];
+  const isHost = myId === hostId;
+  const opponentId = Object.keys(players).find((id) => id !== myId);
 
-  const myName =
-    players && players[myId] && players[myId].name
-      ? players[myId].name
-      : "Você";
+  const myName = players[myId]?.name || "Você";
   const oppName =
-    players && opponentId && players[opponentId] && players[opponentId].name
-      ? players[opponentId].name
-      : "Oponente";
+    opponentId && players[opponentId] ? players[opponentId].name : "Oponente";
 
-  const myScore =
-    stats.scores && stats.scores[myId] !== undefined ? stats.scores[myId] : 0;
-  const oppScore =
-    stats.scores && opponentId && stats.scores[opponentId] !== undefined
-      ? stats.scores[opponentId]
-      : 0;
+  const myScore = stats.scores?.[myId] || 0;
+  const oppScore = stats.scores?.[opponentId] || 0;
+
+  const myDetailedStats = stats.stats?.[myId] || {};
+  const oppDetailedStats = stats.stats?.[opponentId] || {};
 
   const amIWinner = stats.roundWinnerId === myId;
   const matchWinner = stats.matchWinnerId;
 
+  const mySeals = players[myId]?.seals || 0;
+  const oppSeals = players[opponentId]?.seals || 0;
+
   return (
-    <div className="fixed inset-0 bg-black bg-opacity-75 z-50 flex items-center justify-center p-4">
+    <div className="fixed inset-0 bg-black bg-opacity-80 backdrop-blur-sm z-50 flex items-center justify-center p-4 overflow-y-auto">
       <motion.div
-        initial={{ scale: 0.8, opacity: 0 }}
-        animate={{ scale: 1, opacity: 1 }}
-        className="bg-desert-light p-8 rounded-xl shadow-2xl max-w-lg w-full text-center border-4 border-jaipur-gold"
+        initial={{ scale: 0.8, opacity: 0, y: 30 }}
+        animate={{ scale: 1, opacity: 1, y: 0 }}
+        className="bg-[#fcf8e8] p-6 md:p-8 rounded-2xl shadow-2xl max-w-2xl w-full border-4 border-jaipur-gold relative"
       >
+        {/* Título Principal */}
         <h2
-          className={`text-4xl font-display font-bold mb-6 ${amIWinner ? "text-jaipur-green" : "text-jaipur-red"}`}
+          className={`text-3xl md:text-4xl font-display font-bold mb-6 text-center drop-shadow-sm ${matchWinner ? (matchWinner === myId ? "text-jaipur-green" : "text-jaipur-red") : amIWinner ? "text-jaipur-green" : "text-jaipur-red"}`}
         >
           {matchWinner
             ? matchWinner === myId
@@ -48,39 +59,131 @@ export default function RoundEndModal({ stats, myId, players, onNextRound }) {
               : "❌ VOCÊ PERDEU A RODADA."}
         </h2>
 
+        {/* Resumo Detalhado das Pontuações */}
         <div className="flex flex-col gap-4 mb-8">
-          <div
-            className={`p-4 rounded-lg border-2 flex justify-between items-center ${amIWinner ? "bg-green-100 border-jaipur-green" : "bg-white border-gray-300"}`}
-          >
-            <span className="font-bold text-lg text-gray-800">{myName}</span>
-            <div className="flex items-center gap-2 text-2xl font-display font-bold text-jaipur-green">
-              <FaCoins className="text-jaipur-gold" /> {myScore}
-            </div>
-          </div>
-
-          <div
-            className={`p-4 rounded-lg border-2 flex justify-between items-center ${!amIWinner ? "bg-red-100 border-jaipur-red" : "bg-white border-gray-300"}`}
-          >
-            <span className="font-bold text-lg text-gray-800">{oppName}</span>
-            <div className="flex items-center gap-2 text-2xl font-display font-bold text-jaipur-red">
-              <FaCoins className="text-jaipur-gold" /> {oppScore}
-            </div>
-          </div>
+          <StatRow
+            name={myName}
+            isWinner={amIWinner}
+            score={myScore}
+            details={myDetailedStats}
+            seals={mySeals}
+            isMe={true}
+          />
+          <StatRow
+            name={oppName}
+            isWinner={!amIWinner}
+            score={oppScore}
+            details={oppDetailedStats}
+            seals={oppSeals}
+            isMe={false}
+          />
         </div>
 
-        {matchWinner ? (
-          <p className="text-gray-600 font-bold">
-            O jogo acabou. Volte ao menu para uma nova partida.
-          </p>
-        ) : (
-          <button
-            onClick={onNextRound}
-            className="w-full bg-jaipur-gold text-white font-bold py-4 rounded-lg hover:opacity-90 shadow-md text-lg"
-          >
-            Próxima Rodada
-          </button>
-        )}
+        {/* Área de Botões */}
+        <div className="flex flex-col gap-3 mt-6">
+          {matchWinner ? (
+            // BOTÃO FIM DE JOGO: Ambos podem voltar à tela inicial
+            <button
+              onClick={onLeaveRoom}
+              className="w-full bg-jaipur-gold hover:bg-yellow-600 text-white font-bold py-4 rounded-xl shadow-lg text-lg flex items-center justify-center gap-2 transition-all transform hover:scale-[1.02]"
+            >
+              <FaHome className="text-xl" /> Ir para Tela Inicial
+            </button>
+          ) : (
+            // BOTÕES FIM DE RODADA: Lógica de Anfitrião vs Oponente
+            <>
+              {isHost ? (
+                <button
+                  onClick={onNextRound}
+                  className="w-full bg-jaipur-green hover:bg-green-700 text-white font-bold py-4 rounded-xl shadow-lg text-lg flex items-center justify-center gap-2 transition-all transform hover:scale-[1.02]"
+                >
+                  Próxima Rodada <FaArrowRight />
+                </button>
+              ) : (
+                <div className="w-full bg-gray-200 border-2 border-gray-300 text-gray-500 font-bold py-4 rounded-xl shadow-inner text-center flex items-center justify-center gap-3 text-sm md:text-base">
+                  <FaHourglassHalf className="animate-spin-slow text-lg" />
+                  Aguardando o anfitrião continuar a partida...
+                </div>
+              )}
+
+              {/* Opção secundária para sair a qualquer momento (opcional mas recomendado) */}
+              <button
+                onClick={onLeaveRoom}
+                className="w-full mt-1 text-gray-400 hover:text-gray-600 underline font-bold py-2 rounded-lg text-sm transition-all"
+              >
+                Sair para a Tela Inicial
+              </button>
+            </>
+          )}
+        </div>
       </motion.div>
+    </div>
+  );
+}
+
+// Sub-componente para deixar o código limpo e organizar as linhas de cada jogador
+function StatRow({ name, isWinner, score, details, seals, isMe }) {
+  const bgColor = isMe ? "bg-green-50" : "bg-red-50";
+  const borderColor = isMe ? "border-jaipur-green" : "border-jaipur-red";
+  const textColor = isMe ? "text-jaipur-green" : "text-jaipur-red";
+
+  return (
+    <div
+      className={`p-4 rounded-xl border-2 flex flex-col gap-3 transition-colors ${isWinner ? `${bgColor} ${borderColor}` : "bg-white border-gray-300"}`}
+    >
+      {/* Cabeçalho do Jogador (Nome e Selos) */}
+      <div className="flex justify-between items-center border-b border-gray-200 pb-2">
+        <span
+          className={`font-bold text-lg md:text-xl ${textColor} uppercase tracking-wide`}
+        >
+          {name} {isMe && "(Você)"}
+        </span>
+        <div
+          className="flex gap-1"
+          title={`${seals} Selos de Excelência (Vitórias)`}
+        >
+          {Array.from({ length: 2 }).map((_, i) => (
+            <FaAward
+              key={i}
+              className={`text-2xl ${i < seals ? "text-jaipur-gold drop-shadow-md" : "text-gray-200"}`}
+            />
+          ))}
+        </div>
+      </div>
+
+      {/* Detalhamento de Pontos */}
+      <div className="flex justify-between items-end">
+        <div className="flex flex-col gap-1 text-xs md:text-sm text-gray-600 font-medium">
+          <span className="flex items-center gap-1">
+            🪙 Fichas de Mercadoria:{" "}
+            <strong className="text-gray-800 ml-1">
+              {details.goodsTokensCount || 0}
+            </strong>
+          </span>
+          <span className="flex items-center gap-1">
+            🎁 Fichas de Bônus:{" "}
+            <strong className="text-gray-800 ml-1">
+              {details.bonusTokensCount || 0}
+            </strong>
+          </span>
+          <span
+            className={`flex items-center gap-1 ${details.hasCamelBonus ? "text-jaipur-gold font-bold" : "text-gray-400"}`}
+          >
+            <GiCamel className="text-lg" /> Bônus de Rebanho:{" "}
+            <strong className="ml-1">
+              {details.hasCamelBonus ? "+5" : "0"}
+            </strong>
+          </span>
+        </div>
+
+        {/* Soma Total */}
+        <div
+          className={`flex items-center gap-2 text-4xl md:text-5xl font-display font-bold ${textColor}`}
+        >
+          <FaCoins className="text-jaipur-gold text-3xl md:text-4xl drop-shadow-sm" />{" "}
+          {score}
+        </div>
+      </div>
     </div>
   );
 }
