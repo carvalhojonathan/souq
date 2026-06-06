@@ -4,8 +4,8 @@
   "icons": [
     {
       "src": "favicon.svg",
-      "sizes": "512x512 128x128 64x64 32x32 24x24 16x16",
-      "type": "image/x-icon"
+      "type": "image/svg+xml",
+      "sizes": "any"
     },
     {
       "src": "logo-16.png",
@@ -41,7 +41,7 @@
       "src": "logo-512.png",
       "type": "image/png",
       "sizes": "512x512",
-      "purpose": "maskable"
+      "purpose": "any maskable"
     }
   ],
   "start_url": ".",
