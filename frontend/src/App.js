@@ -31,7 +31,7 @@ function App() {
     () => localStorage.getItem("jaipur_theme") === "dark",
   );
 
-  // NOVOS ESTADOS: CPU
+  // ESTADOS: CPU
   const [playVsCPU, setPlayVsCPU] = useState(false);
   const [cpuDifficulty, setCpuDifficulty] = useState("Comerciante distraído");
 
@@ -131,14 +131,18 @@ function App() {
     socket.emit("createRoom", { roomId: randomCode, playerName });
   };
 
-  // NOVA FUNÇÃO: Iniciar jogo contra CPU
+  // FUNÇÃO CORRIGIDA: Iniciar jogo contra CPU
   const startCPUGame = () => {
     isManualAction.current = true;
     if (playerName.trim() === "")
       return setErrorMsg("Por favor, digite o seu nome primeiro.");
-    // Cria um código único com sufixo CPU para o servidor identificar facilmente
+
     const cpuRoomCode =
       "CPU-" + Math.floor(1000 + Math.random() * 9000).toString();
+
+    // CORREÇÃO APLICADA: Grava o ID da sala para o seu turno funcionar
+    setRoomId(cpuRoomCode);
+
     socket.emit("createRoomVsCPU", {
       roomId: cpuRoomCode,
       playerName,
@@ -323,7 +327,7 @@ function App() {
                 </button>
               </div>
 
-              {/* MODO CPU: Mostra seleção de Dificuldade */}
+              {/* MODO CPU */}
               <AnimatePresence mode="wait">
                 {playVsCPU ? (
                   <motion.div
@@ -333,28 +337,65 @@ function App() {
                     exit={{ opacity: 0, height: 0 }}
                     className="flex flex-col gap-4 overflow-hidden"
                   >
-                    <div className="relative">
-                      <select
-                        value={cpuDifficulty}
-                        onChange={(e) => setCpuDifficulty(e.target.value)}
-                        className="w-full px-4 py-3 rounded-lg border-2 border-jaipur-gold dark:border-yellow-600 bg-yellow-50 dark:bg-gray-700 dark:text-white focus:outline-none focus:ring-2 focus:ring-jaipur-gold text-center font-bold text-sm transition-colors appearance-none"
-                      >
-                        <option value="Comerciante distraído">
-                          🟢 Fácil - Comerciante Distraído
-                        </option>
-                        <option value="Mercador Experiente">
-                          🟡 Normal - Mercador Experiente
-                        </option>
-                        <option value="Mestre do Souq">
-                          🔴 Difícil - Mestre do Souq
-                        </option>
-                      </select>
+                    {/* NOVOS BOTÕES DE DIFICULDADE (Substitui o Select) */}
+                    <div className="flex flex-col gap-2 mt-2">
+                      <p className="text-xs font-bold text-gray-500 dark:text-gray-400 uppercase tracking-widest text-left">
+                        Nível de Dificuldade:
+                      </p>
+
+                      <div className="flex flex-col gap-2">
+                        <button
+                          onClick={() =>
+                            setCpuDifficulty("Comerciante distraído")
+                          }
+                          className={`py-3 px-4 rounded-lg border-2 font-bold text-sm text-left transition-all flex items-center justify-between ${
+                            cpuDifficulty === "Comerciante distraído"
+                              ? "bg-green-50 border-green-500 text-green-700 dark:bg-green-900/40 dark:border-green-500 dark:text-green-400 shadow-sm"
+                              : "bg-white border-gray-200 text-gray-500 hover:border-green-300 dark:bg-gray-800 dark:border-gray-600 dark:text-gray-400"
+                          }`}
+                        >
+                          <span>🟢 Fácil</span>
+                          <span className="font-normal opacity-80 text-xs">
+                            Comerciante Distraído
+                          </span>
+                        </button>
+
+                        <button
+                          onClick={() =>
+                            setCpuDifficulty("Mercador Experiente")
+                          }
+                          className={`py-3 px-4 rounded-lg border-2 font-bold text-sm text-left transition-all flex items-center justify-between ${
+                            cpuDifficulty === "Mercador Experiente"
+                              ? "bg-yellow-50 border-yellow-500 text-yellow-700 dark:bg-yellow-900/40 dark:border-yellow-500 dark:text-yellow-400 shadow-sm"
+                              : "bg-white border-gray-200 text-gray-500 hover:border-yellow-300 dark:bg-gray-800 dark:border-gray-600 dark:text-gray-400"
+                          }`}
+                        >
+                          <span>🟡 Normal</span>
+                          <span className="font-normal opacity-80 text-xs">
+                            Mercador Experiente
+                          </span>
+                        </button>
+
+                        <button
+                          onClick={() => setCpuDifficulty("Mestre do Souq")}
+                          className={`py-3 px-4 rounded-lg border-2 font-bold text-sm text-left transition-all flex items-center justify-between ${
+                            cpuDifficulty === "Mestre do Souq"
+                              ? "bg-red-50 border-red-500 text-red-700 dark:bg-red-900/40 dark:border-red-500 dark:text-red-400 shadow-sm"
+                              : "bg-white border-gray-200 text-gray-500 hover:border-red-300 dark:bg-gray-800 dark:border-gray-600 dark:text-gray-400"
+                          }`}
+                        >
+                          <span>🔴 Difícil</span>
+                          <span className="font-normal opacity-80 text-xs">
+                            Mestre do Souq
+                          </span>
+                        </button>
+                      </div>
                     </div>
 
                     <motion.button
                       whileTap={{ scale: 0.95 }}
                       onClick={startCPUGame}
-                      className="w-full bg-jaipur-gold hover:bg-yellow-600 text-white font-bold py-4 px-4 rounded-lg transition-colors shadow-md text-lg touch-manipulation select-none"
+                      className="w-full bg-jaipur-gold hover:bg-yellow-600 text-white font-bold py-4 px-4 rounded-lg transition-colors shadow-md text-lg touch-manipulation select-none mt-2"
                     >
                       🤖 Iniciar Partida Solo
                     </motion.button>
@@ -371,7 +412,7 @@ function App() {
                     <motion.button
                       whileTap={{ scale: 0.95 }}
                       onClick={createRoom}
-                      className="w-full bg-jaipur-green hover:bg-green-700 text-white font-bold py-4 px-4 rounded-lg transition-colors shadow-md text-lg touch-manipulation select-none"
+                      className="w-full bg-jaipur-green hover:bg-green-700 text-white font-bold py-4 px-4 rounded-lg transition-colors shadow-md text-lg touch-manipulation select-none mt-2"
                     >
                       🌟 Criar Nova Sala
                     </motion.button>
