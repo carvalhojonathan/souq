@@ -40,7 +40,8 @@ export default function RoundEndModal({
   const oppSeals = players[opponentId]?.seals || 0;
 
   return (
-    <div className="fixed inset-0 bg-black bg-opacity-80 backdrop-blur-sm z-50 flex items-center justify-center p-4 overflow-y-auto">
+    // Alterado para z-40 para que o pop-up de sair da sala (z-50) fique sempre à frente!
+    <div className="fixed inset-0 bg-black bg-opacity-80 backdrop-blur-sm z-40 flex items-center justify-center p-4 overflow-y-auto">
       <motion.div
         initial={{ scale: 0.8, opacity: 0, y: 30 }}
         animate={{ scale: 1, opacity: 1, y: 0 }}
@@ -90,7 +91,7 @@ export default function RoundEndModal({
               <FaHome className="text-xl" /> Ir para Tela Inicial
             </button>
           ) : (
-            // BOTÕES FIM DE RODADA: Lógica de Anfitrião vs Oponente
+            // BOTÕES FIM DE RODADA: Sem opção de sair para a tela inicial
             <>
               {isHost ? (
                 <button
@@ -105,14 +106,6 @@ export default function RoundEndModal({
                   Aguardando o anfitrião continuar a partida...
                 </div>
               )}
-
-              {/* Opção secundária para sair a qualquer momento (opcional mas recomendado) */}
-              <button
-                onClick={onLeaveRoom}
-                className="w-full mt-1 text-gray-400 hover:text-gray-600 underline font-bold py-2 rounded-lg text-sm transition-all"
-              >
-                Sair para a Tela Inicial
-              </button>
             </>
           )}
         </div>

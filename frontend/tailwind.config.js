@@ -1,5 +1,6 @@
 /** @type {import('tailwindcss').Config} */
 module.exports = {
+  darkMode: "class", // <-- ESSENCIAL: Ativa o modo escuro manual via classe
   content: ["./src/**/*.{js,jsx,ts,tsx}"],
   theme: {
     extend: {

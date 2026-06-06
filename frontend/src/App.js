@@ -2,6 +2,7 @@ import React, { useState, useEffect, useRef } from "react";
 import { io } from "socket.io-client";
 import { motion, AnimatePresence } from "framer-motion";
 import GameBoard from "./components/GameBoard";
+import { FaMoon, FaSun } from "react-icons/fa";
 
 const socketUrl =
   window.location.hostname === "localhost" ? "http://localhost:3000" : "/";
@@ -25,14 +26,29 @@ function App() {
     () => localStorage.getItem("jaipur_isWaiting") === "true",
   );
 
+  // ESTADO DO MODO ESCURO
+  const [isDarkMode, setIsDarkMode] = useState(
+    () => localStorage.getItem("jaipur_theme") === "dark",
+  );
+
   const [gameState, setGameState] = useState(null);
   const [opponentConnected, setOpponentConnected] = useState(false);
-
   const [showLeaveModal, setShowLeaveModal] = useState(false);
   const [errorMsg, setErrorMsg] = useState("");
-
-  // Referência para saber se o utilizador clicou ativamente ou se é auto-reconexão
   const isManualAction = useRef(false);
+
+  // Aplica a classe 'dark' no HTML assim que o estado muda
+  useEffect(() => {
+    if (isDarkMode) {
+      document.documentElement.classList.add("dark");
+      localStorage.setItem("jaipur_theme", "dark");
+    } else {
+      document.documentElement.classList.remove("dark");
+      localStorage.setItem("jaipur_theme", "light");
+    }
+  }, [isDarkMode]);
+
+  const toggleTheme = () => setIsDarkMode(!isDarkMode);
 
   useEffect(() => {
     localStorage.setItem("jaipur_playerName", playerName);
@@ -76,15 +92,11 @@ function App() {
     socket.on("updateGameState", (newState) => {
       setGameState(newState);
     });
-
     socket.on("errorMsg", (msg) => {
-      // CORREÇÃO MÁGICA: Se for "sala não encontrada" na inicialização (sem o user clicar),
-      // falha silenciosamente sem mostrar o pop-up, limpando apenas o LocalStorage.
       if (!isManualAction.current && msg.includes("não encontrada")) {
         resetToLobby();
         return;
       }
-
       setErrorMsg(msg);
       if (
         msg.includes("encerrada") ||
@@ -94,7 +106,6 @@ function App() {
         resetToLobby();
       }
     });
-
     socket.on("opponentDisconnected", () => {
       setErrorMsg("O oponente saiu da sala ou a partida foi encerrada.");
       resetToLobby();
@@ -110,7 +121,7 @@ function App() {
   }, []);
 
   const createRoom = () => {
-    isManualAction.current = true; // Regista que foi ação do jogador
+    isManualAction.current = true;
     if (playerName.trim() === "")
       return setErrorMsg("Por favor, digite o seu nome primeiro.");
     const randomCode = Math.floor(1000 + Math.random() * 9000).toString();
@@ -118,7 +129,7 @@ function App() {
   };
 
   const joinRoom = () => {
-    isManualAction.current = true; // Regista que foi ação do jogador
+    isManualAction.current = true;
     if (playerName.trim() === "")
       return setErrorMsg("Por favor, digite o seu nome primeiro.");
     if (joinCode.trim() === "")
@@ -135,7 +146,18 @@ function App() {
   };
 
   return (
-    <>
+    <div className="min-h-screen bg-gray-50 dark:bg-gray-900 transition-colors duration-300 text-gray-800 dark:text-gray-100 font-body">
+      {/* Botão de Tema para as telas fora do jogo */}
+      {!inGame && (
+        <button
+          onClick={toggleTheme}
+          className="absolute top-4 left-4 p-3 bg-white dark:bg-gray-800 text-gray-600 dark:text-gray-300 rounded-full shadow-md hover:scale-110 transition-transform z-10 border border-gray-200 dark:border-gray-700"
+          title="Alternar Tema"
+        >
+          {isDarkMode ? <FaSun className="text-yellow-400" /> : <FaMoon />}
+        </button>
+      )}
+
       <AnimatePresence>
         {errorMsg !== "" && (
           <motion.div
@@ -148,12 +170,14 @@ function App() {
               initial={{ scale: 0.8, y: 30 }}
               animate={{ scale: 1, y: 0 }}
               exit={{ scale: 0.8, y: 30 }}
-              className="bg-white p-8 rounded-xl shadow-2xl max-w-sm w-full border-t-8 border-jaipur-gold text-center"
+              className="bg-white dark:bg-gray-800 p-8 rounded-xl shadow-2xl max-w-sm w-full border-t-8 border-jaipur-gold text-center"
             >
-              <h3 className="text-2xl font-display font-bold text-gray-800 mb-3">
+              <h3 className="text-2xl font-display font-bold text-gray-800 dark:text-white mb-3">
                 ⚠️ Aviso
               </h3>
-              <p className="text-gray-600 font-bold mb-8 text-sm">{errorMsg}</p>
+              <p className="text-gray-600 dark:text-gray-300 font-bold mb-8 text-sm">
+                {errorMsg}
+              </p>
               <button
                 onClick={() => setErrorMsg("")}
                 className="w-full py-3 px-4 bg-jaipur-gold text-white font-bold rounded-lg hover:opacity-90 transition-colors shadow-md"
@@ -177,19 +201,19 @@ function App() {
               initial={{ scale: 0.8, y: 30 }}
               animate={{ scale: 1, y: 0 }}
               exit={{ scale: 0.8, y: 30 }}
-              className="bg-white p-8 rounded-xl shadow-2xl max-w-sm w-full border-t-8 border-jaipur-red text-center"
+              className="bg-white dark:bg-gray-800 p-8 rounded-xl shadow-2xl max-w-sm w-full border-t-8 border-jaipur-red text-center"
             >
-              <h3 className="text-2xl font-display font-bold text-gray-800 mb-3">
+              <h3 className="text-2xl font-display font-bold text-gray-800 dark:text-white mb-3">
                 Abandonar Partida?
               </h3>
-              <p className="text-gray-600 font-bold mb-8 text-sm">
+              <p className="text-gray-600 dark:text-gray-300 font-bold mb-8 text-sm">
                 Tem a certeza que deseja sair da sala? A partida será encerrada
                 para o seu oponente também.
               </p>
               <div className="flex gap-4">
                 <button
                   onClick={cancelLeaveRoom}
-                  className="flex-1 py-3 px-4 bg-gray-200 text-gray-700 font-bold rounded-lg hover:bg-gray-300 transition-colors shadow-sm"
+                  className="flex-1 py-3 px-4 bg-gray-200 dark:bg-gray-700 text-gray-700 dark:text-white font-bold rounded-lg hover:bg-gray-300 dark:hover:bg-gray-600 transition-colors shadow-sm"
                 >
                   Cancelar
                 </button>
@@ -206,18 +230,20 @@ function App() {
       </AnimatePresence>
 
       {inGame && gameState ? (
-        <div className="min-h-screen p-2 md:p-4 font-body text-gray-800">
+        <div className="p-2 md:p-4">
           <GameBoard
             gameState={gameState}
             socket={socket}
             roomId={roomId}
             opponentConnected={opponentConnected}
             onLeaveRoom={requestLeaveRoom}
+            isDarkMode={isDarkMode}
+            toggleTheme={toggleTheme}
           />
         </div>
       ) : isWaiting ? (
-        <div className="min-h-screen flex flex-col items-center justify-center p-4 font-body">
-          <div className="bg-white p-8 md:p-12 rounded-xl shadow-2xl text-center border-t-8 border-jaipur-green relative max-w-md w-full">
+        <div className="flex flex-col items-center justify-center h-screen p-4">
+          <div className="bg-white dark:bg-gray-800 p-8 md:p-12 rounded-xl shadow-2xl text-center border-t-8 border-jaipur-green relative max-w-md w-full">
             <motion.button
               whileTap={{ scale: 0.9 }}
               onClick={requestLeaveRoom}
@@ -230,13 +256,13 @@ function App() {
               alt="Rota dos Camelos"
               className="h-28 mx-auto mb-6 object-contain drop-shadow-md"
             />
-            <h2 className="text-2xl md:text-3xl font-display font-bold text-gray-800 mb-2 animate-pulse">
+            <h2 className="text-2xl md:text-3xl font-display font-bold text-gray-800 dark:text-white mb-2 animate-pulse">
               ⏳ Aguardando...
             </h2>
-            <p className="text-gray-600 font-bold mb-6 text-sm">
+            <p className="text-gray-600 dark:text-gray-300 font-bold mb-6 text-sm">
               A sua sala está pronta. Partilhe o código abaixo:
             </p>
-            <div className="bg-desert-light py-4 rounded-lg border border-desert-dark mb-2">
+            <div className="bg-desert-light dark:bg-gray-700 py-4 rounded-lg border border-desert-dark dark:border-gray-600 mb-2">
               <div className="text-5xl font-display font-bold text-jaipur-green tracking-widest drop-shadow-sm">
                 {roomId}
               </div>
@@ -244,21 +270,21 @@ function App() {
           </div>
         </div>
       ) : (
-        <div className="min-h-screen flex flex-col items-center justify-center p-4 font-body">
-          <div className="bg-white p-8 rounded-xl shadow-2xl max-w-md w-full border-t-8 border-jaipur-green text-center">
+        <div className="flex flex-col items-center justify-center h-screen p-4">
+          <div className="bg-white dark:bg-gray-800 p-8 rounded-xl shadow-2xl max-w-md w-full border-t-8 border-jaipur-green text-center transition-colors">
             <img
               src="/images/logo.png"
               alt="Rota dos Camelos"
               className="h-48 md:h-64 mx-auto mb-2 object-contain drop-shadow-md"
             />
-            <p className="text-gray-600 mb-8 font-bold">
+            <p className="text-gray-600 dark:text-gray-300 mb-8 font-bold">
               O mercado te aguarda!
             </p>
             <div className="flex flex-col gap-4">
               <input
                 type="text"
                 maxLength="12"
-                className="w-full px-4 py-3 rounded-lg border-2 border-gray-300 focus:outline-none focus:ring-2 focus:ring-jaipur-green text-center text-lg font-bold touch-manipulation"
+                className="w-full px-4 py-3 rounded-lg border-2 border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-white focus:outline-none focus:ring-2 focus:ring-jaipur-green text-center text-lg font-bold touch-manipulation transition-colors"
                 placeholder="O SEU NOME"
                 value={playerName}
                 onChange={(e) => setPlayerName(e.target.value)}
@@ -271,17 +297,17 @@ function App() {
                 🌟 Criar Nova Sala
               </motion.button>
               <div className="flex items-center my-2">
-                <div className="flex-grow border-t border-gray-300"></div>
-                <span className="px-3 text-gray-400 text-sm font-bold">
+                <div className="flex-grow border-t border-gray-300 dark:border-gray-600"></div>
+                <span className="px-3 text-gray-400 dark:text-gray-500 text-sm font-bold">
                   OU ENTRAR NUMA SALA
                 </span>
-                <div className="flex-grow border-t border-gray-300"></div>
+                <div className="flex-grow border-t border-gray-300 dark:border-gray-600"></div>
               </div>
               <div className="flex gap-2">
                 <input
                   type="text"
                   maxLength="4"
-                  className="w-2/3 px-4 py-3 rounded-lg border-2 border-gray-300 focus:outline-none focus:ring-2 focus:ring-jaipur-gold text-center text-xl tracking-widest font-bold touch-manipulation"
+                  className="w-2/3 px-4 py-3 rounded-lg border-2 border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-white focus:outline-none focus:ring-2 focus:ring-jaipur-gold text-center text-xl tracking-widest font-bold touch-manipulation transition-colors"
                   placeholder="CÓDIGO"
                   value={joinCode}
                   onChange={(e) => setJoinCode(e.target.value)}
@@ -298,7 +324,7 @@ function App() {
           </div>
         </div>
       )}
-    </>
+    </div>
   );
 }
 

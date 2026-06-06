@@ -15,6 +15,8 @@ export default function GameBoard({
   roomId,
   opponentConnected,
   onLeaveRoom,
+  isDarkMode, // Recebe do App.js
+  toggleTheme, // Recebe do App.js
 }) {
   const [showHelp, setShowHelp] = useState(false);
   const [selectedHandCards, setSelectedHandCards] = useState([]);
@@ -27,12 +29,11 @@ export default function GameBoard({
   const opponent = gameState.players[opponentId];
   const isMyTurn = gameState.isMyTurn;
 
-  // TRAVA DE SEGURANÇA: Evita que a tela quebre durante a sincronização
   if (!myPlayer || !opponent) {
     return (
       <div className="flex flex-col items-center justify-center min-h-[50vh] text-center">
         <div className="text-4xl animate-bounce mb-4">🐪</div>
-        <h2 className="text-xl font-bold text-gray-700 font-display animate-pulse">
+        <h2 className="text-xl font-bold text-gray-700 dark:text-gray-300 font-display animate-pulse">
           Sincronizando partida...
         </h2>
       </div>
@@ -45,6 +46,7 @@ export default function GameBoard({
     );
 
   const toggleMarketSelection = (index) => {
+    // ... (mantém a sua lógica intacta)
     const clickedCard = gameState.market[index];
     if (clickedCard === "camel") {
       const camelIndices = gameState.market.reduce((acc, card, i) => {
@@ -89,10 +91,11 @@ export default function GameBoard({
       <div className="game-board-container relative">
         <div style={{ gridArea: "header" }}>
           <GameHeader
-            roomId={roomId}
             opponentConnected={opponentConnected}
             onOpenHelp={() => setShowHelp(true)}
             onLeaveRoom={onLeaveRoom}
+            isDarkMode={isDarkMode}
+            toggleTheme={toggleTheme}
           />
         </div>
 
@@ -122,12 +125,10 @@ export default function GameBoard({
           <TokenArea tokens={gameState.tokens} />
         </div>
 
-        {/* MESA DO JOGO (Com gap para separar e manter as bordas fechadas) */}
         <div
           style={{ gridArea: "board" }}
           className="flex flex-col gap-3 md:gap-4"
         >
-          {/* 1. VOCÊ NO TOPO */}
           <PlayerArea
             isOpponent={false}
             isMyTurn={isMyTurn}
@@ -139,10 +140,9 @@ export default function GameBoard({
             onSelectCard={toggleHandSelection}
             selectedHerdCount={selectedHerdCount}
             onHerdSelect={setSelectedHerdCount}
-            className="shadow-sm rounded-xl"
+            className="shadow-sm rounded-xl dark:bg-gray-800 dark:border-gray-700"
           />
 
-          {/* 2. MERCADO NO CENTRO */}
           <MarketArea
             isMyTurn={isMyTurn}
             marketCards={gameState.market}
@@ -150,17 +150,16 @@ export default function GameBoard({
             discardPile={gameState.discardPile}
             selectedMarketCards={selectedMarketCards}
             onSelectCard={toggleMarketSelection}
-            className="shadow-sm rounded-xl"
+            className="shadow-sm rounded-xl dark:bg-gray-800 dark:border-gray-700"
           />
 
-          {/* 3. OPONENTE NA BASE */}
           <PlayerArea
             isOpponent={true}
             playerName={opponent.name}
             hand={opponent.handCount}
             herdCount={opponent.herd.length}
             seals={opponent.seals}
-            className="shadow-sm rounded-xl"
+            className="shadow-sm rounded-xl dark:bg-gray-800 dark:border-gray-700"
           />
         </div>
 
