@@ -109,7 +109,6 @@ export default function TokenPile({ type, label, data }) {
                 transition: { duration: 0.4 },
               }}
               className="flex flex-col items-center"
-              // Sobreposição aumentada de -8px para -16px
               style={{
                 marginLeft: index === 0 ? "0" : "-16px",
                 zIndex: count - index,
@@ -120,8 +119,8 @@ export default function TokenPile({ type, label, data }) {
                   src={imgSrc}
                   alt={label}
                   onError={() => setImgError(true)}
-                  // Borda branca pura e formato redondo perfeito adicionados aqui
-                  className="w-10 h-10 object-contain shadow-sm rounded-full border-[2px] border-white bg-white"
+                  // Borda alterada de border-[2px] para apenas border (borda mais fina)
+                  className="w-10 h-10 object-contain shadow-sm rounded-full border border-white bg-white"
                   style={{
                     imageRendering: "-webkit-optimize-contrast",
                     transform: "translateZ(0)",
@@ -129,7 +128,7 @@ export default function TokenPile({ type, label, data }) {
                 />
               ) : (
                 <div
-                  className={`w-10 h-10 rounded-full flex justify-center items-center font-bold border-[2px] border-white shadow-sm ${currentBg}`}
+                  className={`w-10 h-10 rounded-full flex justify-center items-center font-bold border border-white shadow-sm ${currentBg}`}
                 >
                   {getTokenIcon(type)}
                 </div>

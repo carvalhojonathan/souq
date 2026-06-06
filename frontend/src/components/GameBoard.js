@@ -27,8 +27,7 @@ export default function GameBoard({
   const opponent = gameState.players[opponentId];
   const isMyTurn = gameState.isMyTurn;
 
-  // TRAVA DE SEGURANÇA: Evita que a tela quebre durante o milissegundo em que a página atualiza
-  // e o novo ID de socket ainda está sendo processado pelo servidor.
+  // TRAVA DE SEGURANÇA: Evita que a tela quebre durante a sincronização
   if (!myPlayer || !opponent) {
     return (
       <div className="flex flex-col items-center justify-center min-h-[50vh] text-center">
@@ -123,7 +122,12 @@ export default function GameBoard({
           <TokenArea tokens={gameState.tokens} />
         </div>
 
-        <div style={{ gridArea: "board" }} className="flex flex-col">
+        {/* MESA DO JOGO (Com gap para separar e manter as bordas fechadas) */}
+        <div
+          style={{ gridArea: "board" }}
+          className="flex flex-col gap-3 md:gap-4"
+        >
+          {/* 1. VOCÊ NO TOPO */}
           <PlayerArea
             isOpponent={false}
             isMyTurn={isMyTurn}
@@ -135,9 +139,10 @@ export default function GameBoard({
             onSelectCard={toggleHandSelection}
             selectedHerdCount={selectedHerdCount}
             onHerdSelect={setSelectedHerdCount}
-            className="rounded-b-none border-b-0 z-10"
+            className="shadow-sm rounded-xl"
           />
 
+          {/* 2. MERCADO NO CENTRO */}
           <MarketArea
             isMyTurn={isMyTurn}
             marketCards={gameState.market}
@@ -145,16 +150,17 @@ export default function GameBoard({
             discardPile={gameState.discardPile}
             selectedMarketCards={selectedMarketCards}
             onSelectCard={toggleMarketSelection}
-            className="rounded-none -mt-px z-0"
+            className="shadow-sm rounded-xl"
           />
 
+          {/* 3. OPONENTE NA BASE */}
           <PlayerArea
             isOpponent={true}
             playerName={opponent.name}
             hand={opponent.handCount}
             herdCount={opponent.herd.length}
             seals={opponent.seals}
-            className="rounded-t-none border-t-0 -mt-px z-10"
+            className="shadow-sm rounded-xl"
           />
         </div>
 
