@@ -3,6 +3,29 @@ import Card from "./Card";
 import { FaAward, FaTimes } from "react-icons/fa";
 import { AnimatePresence, motion } from "framer-motion";
 
+const CARD_ORDER = {
+  diamond: 0,
+  gold: 1,
+  silver: 2,
+  cloth: 3,
+  spice: 4,
+  leather: 5,
+  camel: 6,
+};
+
+function sortHandWithOriginalIndex(hand = []) {
+  return hand
+    .map((cardType, originalIndex) => ({
+      cardType,
+      originalIndex,
+      order: CARD_ORDER[cardType] ?? 99,
+    }))
+    .sort((a, b) => {
+      if (a.order !== b.order) return a.order - b.order;
+      return a.originalIndex - b.originalIndex;
+    });
+}
+
 export default function PlayerArea({
   isOpponent,
   playerName,
@@ -38,11 +61,13 @@ export default function PlayerArea({
 
   const isOpponentHandRevealed =
     isOpponent && isRoundOver && Array.isArray(hand);
+
   const handCount = isOpponent
     ? Array.isArray(hand)
       ? hand.length
       : hand
     : hand.length;
+
   const needsUltraCompactHand = !isOpponent && handCount >= 6 && herdCount > 0;
 
   const handCardSize = needsUltraCompactHand
@@ -80,14 +105,16 @@ export default function PlayerArea({
   const renderHand = () => {
     if (isOpponent) {
       if (isOpponentHandRevealed) {
-        return hand.map((cardType, index) => (
-          <div
-            key={`revealed-opp-card-${index}`}
-            className="flex-shrink-0 transition-all duration-300 py-1"
-          >
-            <Card type={cardType} sizeClassName={handCardSize} />
-          </div>
-        ));
+        return sortHandWithOriginalIndex(hand).map(
+          ({ cardType, originalIndex }) => (
+            <div
+              key={`revealed-opp-card-${originalIndex}`}
+              className="flex-shrink-0 transition-all duration-300 py-1"
+            >
+              <Card type={cardType} sizeClassName={handCardSize} />
+            </div>
+          ),
+        );
       }
 
       return Array.from({ length: hand }).map((_, i) => (
@@ -102,21 +129,23 @@ export default function PlayerArea({
       ));
     }
 
-    return hand.map((cardType, index) => (
-      <div
-        key={`my-card-${index}`}
-        className="flex-shrink-0 transition-all duration-300 py-1"
-      >
-        <Card
-          type={cardType}
-          sizeClassName={handCardSize}
-          isSelected={selectedHandCards.includes(index)}
-          onClick={() => {
-            if (isMyTurn && !isRoundOver) onSelectCard(index);
-          }}
-        />
-      </div>
-    ));
+    return sortHandWithOriginalIndex(hand).map(
+      ({ cardType, originalIndex }) => (
+        <div
+          key={`my-card-${originalIndex}`}
+          className="flex-shrink-0 transition-all duration-300 py-1"
+        >
+          <Card
+            type={cardType}
+            sizeClassName={handCardSize}
+            isSelected={selectedHandCards.includes(originalIndex)}
+            onClick={() => {
+              if (isMyTurn && !isRoundOver) onSelectCard(originalIndex);
+            }}
+          />
+        </div>
+      ),
+    );
   };
 
   const areaStyle = isOpponent
