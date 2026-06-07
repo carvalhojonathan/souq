@@ -32,6 +32,7 @@ export default function GameBoard({
   const myPlayer = gameState.players[myId];
   const opponent = gameState.players[opponentId];
   const isMyTurn = gameState.isMyTurn;
+  const isRoundOver = Boolean(gameState.roundEndStats);
 
   if (!myPlayer || !opponent) return null;
 
@@ -76,6 +77,15 @@ export default function GameBoard({
   const handleLeaveMatch = () => {
     socket.emit("leaveRoom", roomId);
     onLeaveRoom();
+  };
+
+  const getRoundScore = (playerId) => {
+    if (!gameState.roundEndStats?.scores) return null;
+    return gameState.roundEndStats.scores[playerId] ?? null;
+  };
+
+  const hasCamelBonus = (playerId) => {
+    return Boolean(gameState.roundEndStats?.stats?.[playerId]?.hasCamelBonus);
   };
 
   return (
@@ -141,7 +151,7 @@ export default function GameBoard({
         >
           <PlayerArea
             isOpponent={false}
-            isMyTurn={isMyTurn}
+            isMyTurn={isMyTurn && !isRoundOver}
             playerName={myPlayer.name}
             hand={myPlayer.hand}
             herdCount={myPlayer.herd.length}
@@ -151,11 +161,14 @@ export default function GameBoard({
             onSelectCard={toggleHandSelection}
             selectedHerdCount={selectedHerdCount}
             onHerdSelect={setSelectedHerdCount}
+            isRoundOver={isRoundOver}
+            roundScore={getRoundScore(myId)}
+            hasCamelBonus={hasCamelBonus(myId)}
             className="shadow-sm rounded-xl dark:bg-gray-800 dark:border-gray-700"
           />
 
           <MarketArea
-            isMyTurn={isMyTurn}
+            isMyTurn={isMyTurn && !isRoundOver}
             marketCards={gameState.market}
             deckCount={gameState.deck.length}
             discardPile={gameState.discardPile}
@@ -167,10 +180,17 @@ export default function GameBoard({
           <PlayerArea
             isOpponent={true}
             playerName={opponent.name}
-            hand={opponent.handCount}
+            hand={
+              isRoundOver && Array.isArray(opponent.hand)
+                ? opponent.hand
+                : opponent.handCount
+            }
             herdCount={opponent.herd.length}
             seals={opponent.seals}
             tokens={opponent.tokens}
+            isRoundOver={isRoundOver}
+            roundScore={getRoundScore(opponentId)}
+            hasCamelBonus={hasCamelBonus(opponentId)}
             className="shadow-sm rounded-xl dark:bg-gray-800 dark:border-gray-700"
           />
         </div>
