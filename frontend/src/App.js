@@ -59,14 +59,28 @@ function App() {
     localStorage.setItem("jaipur_isWaiting", isWaiting);
   }, [playerName, roomId, joinCode, inGame, isWaiting]);
 
-  // Efeito de reconexão automática ao dar Refresh
+  // Efeito de reconexão automática ao dar Refresh (agora disparado pelo evento de conexão)
   useEffect(() => {
-    const reconnect = setTimeout(() => {
-      if ((inGame || isWaiting) && roomId && playerName) {
-        socket.emit("joinRoom", { roomId, playerName });
+    const onConnect = () => {
+      const savedRoomId = localStorage.getItem("jaipur_roomId");
+      const savedPlayerName = localStorage.getItem("jaipur_playerName");
+      const wasInGame = localStorage.getItem("jaipur_inGame") === "true";
+      const wasWaiting = localStorage.getItem("jaipur_isWaiting") === "true";
+
+      if ((wasInGame || wasWaiting) && savedRoomId && savedPlayerName) {
+        socket.emit("joinRoom", {
+          roomId: savedRoomId,
+          playerName: savedPlayerName,
+        });
       }
-    }, 500);
-    return () => clearTimeout(reconnect);
+    };
+
+    socket.on("connect", onConnect);
+    if (socket.connected) onConnect();
+
+    return () => {
+      socket.off("connect", onConnect);
+    };
   }, []);
 
   const resetToLobby = () => {
