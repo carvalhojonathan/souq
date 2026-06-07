@@ -9,7 +9,6 @@ import {
 } from "react-icons/gi";
 import { FaCoins, FaPepperHot } from "react-icons/fa";
 
-// Ícones para o Fallback
 const getIcon = (type, className) => {
   const icons = {
     camel: <GiCamel className={className} />,
@@ -21,6 +20,7 @@ const getIcon = (type, className) => {
     leather: <GiAnimalHide className={className} />,
     back: <span className={className}>🕌</span>,
   };
+
   return icons[type] || icons.back;
 };
 
@@ -44,6 +44,7 @@ export default function Card({
     leather: "couro",
     camel: "camelo",
     back: "verso",
+    deck: "verso",
   };
 
   const imgName = hidden ? "verso" : typeToName[type] || "verso";
@@ -58,6 +59,7 @@ export default function Card({
     leather: "bg-amber-800 text-white border-amber-950",
     camel: "bg-yellow-200 text-yellow-900 border-yellow-600",
     back: "bg-jaipur-green text-jaipur-gold border-jaipur-gold",
+    deck: "bg-jaipur-green text-jaipur-gold border-jaipur-gold",
   };
 
   const labels = {
@@ -69,16 +71,18 @@ export default function Card({
     leather: "Couro",
     camel: "Camelo",
     back: "Jaipur",
+    deck: "Jaipur",
   };
 
   const fallbackStyle = hidden
     ? typeColors.back
     : typeColors[type] || typeColors.back;
+
   const fallbackLabel = hidden ? labels.back : labels[type] || labels.back;
 
   const cardSizeClass =
     sizeClassName ||
-    "w-[76px] h-[100px] md:w-[90px] md:h-[117px] lg:w-[100px] lg:h-[130px]";
+    "w-[58px] h-[76px] sm:w-[76px] sm:h-[100px] md:w-[90px] md:h-[117px] lg:w-[100px] lg:h-[130px]";
 
   return (
     <motion.div
@@ -92,8 +96,12 @@ export default function Card({
         rounded-lg cursor-pointer select-none font-body
         transition-shadow duration-200 touch-none border-2
         ${cardSizeClass}
-        ${isSelected ? "ring-4 ring-jaipur-red shadow-xl -translate-y-2" : "shadow-md"}
-        ${imgError ? fallbackStyle : "border-transparent"} 
+        ${
+          isSelected
+            ? "ring-4 ring-jaipur-red shadow-xl -translate-y-2"
+            : "shadow-md"
+        }
+        ${imgError ? fallbackStyle : "border-transparent"}
       `}
     >
       {!imgError ? (
@@ -101,7 +109,9 @@ export default function Card({
           src={imgSrc}
           alt={imgName}
           onError={() => setImgError(true)}
-          className={`w-full h-full object-contain rounded-lg ${isDiscard ? "grayscale blur-[2px]" : ""}`}
+          className={`w-full h-full object-contain rounded-lg ${
+            isDiscard ? "grayscale blur-[2px]" : ""
+          }`}
           style={{
             imageRendering: "-webkit-optimize-contrast",
             transform: "translateZ(0)",
@@ -110,13 +120,17 @@ export default function Card({
         />
       ) : (
         <div
-          className={`w-[85%] h-[90%] border border-opacity-30 border-current flex flex-col items-center justify-center rounded pointer-events-none ${isDiscard ? "grayscale blur-[1px]" : ""}`}
+          className={`w-[85%] h-[90%] border border-opacity-30 border-current flex flex-col items-center justify-center rounded pointer-events-none ${
+            isDiscard ? "grayscale blur-[1px]" : ""
+          }`}
         >
           <span className="font-bold text-[8px] md:text-[10px] uppercase text-center px-1 font-display tracking-wider mb-1 md:mb-2 leading-none">
             {fallbackLabel}
           </span>
+
           {!hidden &&
             getIcon(type, "text-2xl md:text-3xl opacity-90 drop-shadow-sm")}
+
           {hidden && getIcon("back", "text-2xl md:text-3xl drop-shadow-md")}
         </div>
       )}

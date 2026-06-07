@@ -34,15 +34,17 @@ export default function PlayerArea({
 
   const handCardSize =
     handCount >= 6
-      ? "w-[56px] h-[74px] sm:w-[66px] sm:h-[86px] md:w-[76px] md:h-[100px] lg:w-[84px] lg:h-[110px]"
-      : "w-[76px] h-[100px] sm:w-[82px] sm:h-[108px] md:w-[90px] md:h-[117px] lg:w-[100px] lg:h-[130px]";
+      ? "w-[38px] h-[50px] xs:w-[42px] xs:h-[55px] sm:w-[58px] sm:h-[76px] md:w-[72px] md:h-[94px] lg:w-[82px] lg:h-[107px]"
+      : "w-[48px] h-[63px] xs:w-[52px] xs:h-[68px] sm:w-[70px] sm:h-[92px] md:w-[84px] md:h-[110px] lg:w-[96px] lg:h-[125px]";
 
   const herdCardSize = isOpponent
-    ? "w-[52px] h-[68px] sm:w-[60px] sm:h-[78px] md:w-[70px] md:h-[92px] lg:w-[76px] lg:h-[100px]"
-    : "w-[56px] h-[74px] sm:w-[66px] sm:h-[86px] md:w-[76px] md:h-[100px] lg:w-[84px] lg:h-[110px]";
+    ? "w-[42px] h-[55px] xs:w-[46px] xs:h-[60px] sm:w-[56px] sm:h-[74px] md:w-[66px] md:h-[86px] lg:w-[74px] lg:h-[97px]"
+    : "w-[42px] h-[55px] xs:w-[46px] xs:h-[60px] sm:w-[60px] sm:h-[78px] md:w-[70px] md:h-[92px] lg:w-[78px] lg:h-[102px]";
 
   const handGapClass =
-    handCount >= 6 ? "gap-1.5 sm:gap-2 md:gap-2.5" : "gap-2 sm:gap-3 md:gap-4";
+    handCount >= 6
+      ? "gap-1 xs:gap-1.5 sm:gap-2 md:gap-2.5"
+      : "gap-1.5 xs:gap-2 sm:gap-3 md:gap-4";
 
   const renderHand = () => {
     if (isOpponent) {
@@ -146,9 +148,9 @@ export default function PlayerArea({
         </div>
       </div>
 
-      <div className="flex flex-row items-stretch justify-between min-h-[7rem] md:min-h-[8rem] p-2 pr-3 sm:pr-4 bg-desert-light dark:bg-gray-900 rounded border border-desert-dark dark:border-gray-700 w-full transition-colors relative overflow-hidden">
+      <div className="flex flex-row items-stretch justify-between min-h-[5.6rem] sm:min-h-[7rem] md:min-h-[8rem] p-2 pr-2 sm:pr-4 bg-desert-light dark:bg-gray-900 rounded border border-desert-dark dark:border-gray-700 w-full transition-colors relative overflow-hidden">
         <div
-          className={`flex flex-row items-center justify-start ${handGapClass} flex-grow min-w-0 pr-2 overflow-hidden`}
+          className={`flex flex-row items-center justify-start ${handGapClass} flex-grow min-w-0 pr-1 sm:pr-2 overflow-hidden`}
         >
           <AnimatePresence>{renderHand()}</AnimatePresence>
 
@@ -160,7 +162,7 @@ export default function PlayerArea({
         </div>
 
         {!isOpponent && herdCount > 0 && (
-          <div className="ml-2 sm:ml-auto pl-3 sm:pl-4 border-l-2 border-dashed border-gray-400 dark:border-gray-600 flex flex-col items-center justify-center transition-colors flex-shrink-0 mr-1 self-stretch">
+          <div className="ml-1.5 sm:ml-auto pl-2 sm:pl-4 border-l-2 border-dashed border-gray-400 dark:border-gray-600 flex flex-col items-center justify-center transition-colors flex-shrink-0 mr-0.5 sm:mr-1 self-stretch">
             <div className="flex items-center justify-center">
               <Card
                 type="camel"
@@ -169,7 +171,7 @@ export default function PlayerArea({
               />
             </div>
 
-            <div className="mt-1 md:mt-2 flex items-center gap-0.5 md:gap-1">
+            <div className="mt-1 md:mt-2 flex items-center gap-0.5 md:gap-1 scale-90 sm:scale-100">
               <button
                 onClick={() => onHerdSelect(0)}
                 disabled={selectedHerdCount === 0}
@@ -220,7 +222,7 @@ export default function PlayerArea({
         )}
 
         {isOpponent && herdCount > 0 && (
-          <div className="ml-2 sm:ml-auto pl-3 sm:pl-4 border-l-2 border-dashed border-gray-400 dark:border-gray-600 flex flex-col items-center justify-center transition-colors flex-shrink-0 mr-1 self-stretch">
+          <div className="ml-1.5 sm:ml-auto pl-2 sm:pl-4 border-l-2 border-dashed border-gray-400 dark:border-gray-600 flex flex-col items-center justify-center transition-colors flex-shrink-0 mr-0.5 sm:mr-1 self-stretch">
             <div className="flex items-center justify-center">
               <Card
                 type="camel"
