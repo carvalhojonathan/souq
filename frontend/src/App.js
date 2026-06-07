@@ -37,6 +37,7 @@ function App() {
   const [opponentConnected, setOpponentConnected] = useState(false);
   const [showLeaveModal, setShowLeaveModal] = useState(false);
   const [errorMsg, setErrorMsg] = useState("");
+
   const isManualAction = useRef(false);
 
   useEffect(() => {
@@ -49,39 +50,15 @@ function App() {
     }
   }, [isDarkMode]);
 
-  const toggleTheme = () => setIsDarkMode(!isDarkMode);
+  const toggleTheme = () => setIsDarkMode((prev) => !prev);
 
   useEffect(() => {
     localStorage.setItem("jaipur_playerName", playerName);
     localStorage.setItem("jaipur_roomId", roomId);
     localStorage.setItem("jaipur_joinCode", joinCode);
-    localStorage.setItem("jaipur_inGame", inGame);
-    localStorage.setItem("jaipur_isWaiting", isWaiting);
+    localStorage.setItem("jaipur_inGame", String(inGame));
+    localStorage.setItem("jaipur_isWaiting", String(isWaiting));
   }, [playerName, roomId, joinCode, inGame, isWaiting]);
-
-  // Efeito de reconexão automática ao dar Refresh (agora disparado pelo evento de conexão)
-  useEffect(() => {
-    const onConnect = () => {
-      const savedRoomId = localStorage.getItem("jaipur_roomId");
-      const savedPlayerName = localStorage.getItem("jaipur_playerName");
-      const wasInGame = localStorage.getItem("jaipur_inGame") === "true";
-      const wasWaiting = localStorage.getItem("jaipur_isWaiting") === "true";
-
-      if ((wasInGame || wasWaiting) && savedRoomId && savedPlayerName) {
-        socket.emit("joinRoom", {
-          roomId: savedRoomId,
-          playerName: savedPlayerName,
-        });
-      }
-    };
-
-    socket.on("connect", onConnect);
-    if (socket.connected) onConnect();
-
-    return () => {
-      socket.off("connect", onConnect);
-    };
-  }, []);
 
   const resetToLobby = () => {
     setInGame(false);
@@ -99,24 +76,72 @@ function App() {
   };
 
   useEffect(() => {
+    const onConnect = () => {
+      const savedRoomId = localStorage.getItem("jaipur_roomId");
+      const savedPlayerName = localStorage.getItem("jaipur_playerName");
+      const wasInGame = localStorage.getItem("jaipur_inGame") === "true";
+      const wasWaiting = localStorage.getItem("jaipur_isWaiting") === "true";
+
+      if ((wasInGame || wasWaiting) && savedRoomId && savedPlayerName) {
+        isManualAction.current = false;
+
+        socket.emit("reconnectRoom", {
+          roomId: savedRoomId,
+          playerName: savedPlayerName,
+        });
+      }
+    };
+
+    socket.on("connect", onConnect);
+
+    if (socket.connected) {
+      onConnect();
+    }
+
+    return () => {
+      socket.off("connect", onConnect);
+    };
+  }, []);
+
+  useEffect(() => {
     socket.on("roomCreated", (id) => {
       setRoomId(id);
       setIsWaiting(true);
+      setInGame(false);
+      setOpponentConnected(false);
+      isManualAction.current = false;
     });
+
     socket.on("gameReady", () => {
       setIsWaiting(false);
       setInGame(true);
       setOpponentConnected(true);
+      isManualAction.current = false;
     });
+
+    socket.on("waitingRestored", ({ roomId: restoredRoomId }) => {
+      setRoomId(restoredRoomId);
+      setIsWaiting(true);
+      setInGame(false);
+      setOpponentConnected(false);
+      isManualAction.current = false;
+    });
+
     socket.on("updateGameState", (newState) => {
       setGameState(newState);
+      setIsWaiting(false);
+      setInGame(true);
     });
-    socket.on("errorMsg", (msg) => {
-      if (!isManualAction.current && msg.includes("não encontrada")) {
-        resetToLobby();
-        return;
-      }
+
+    socket.on("restoreFailed", (msg) => {
+      resetToLobby();
       setErrorMsg(msg);
+      isManualAction.current = false;
+    });
+
+    socket.on("errorMsg", (msg) => {
+      setErrorMsg(msg);
+
       if (
         msg.includes("encerrada") ||
         msg.includes("não encontrada") ||
@@ -124,10 +149,21 @@ function App() {
       ) {
         resetToLobby();
       }
+
+      isManualAction.current = false;
     });
+
     socket.on("opponentDisconnected", () => {
       setErrorMsg("O oponente saiu da sala ou a partida foi encerrada.");
       resetToLobby();
+    });
+
+    socket.on("opponentTemporarilyDisconnected", () => {
+      setOpponentConnected(false);
+    });
+
+    socket.on("opponentReconnected", () => {
+      setOpponentConnected(true);
     });
 
     socket.on("opponentLeftPostGame", () => {
@@ -137,29 +173,46 @@ function App() {
     return () => {
       socket.off("roomCreated");
       socket.off("gameReady");
+      socket.off("waitingRestored");
       socket.off("updateGameState");
+      socket.off("restoreFailed");
       socket.off("errorMsg");
       socket.off("opponentDisconnected");
+      socket.off("opponentTemporarilyDisconnected");
+      socket.off("opponentReconnected");
       socket.off("opponentLeftPostGame");
     };
   }, []);
 
   const createRoom = () => {
     isManualAction.current = true;
-    if (playerName.trim() === "")
+
+    if (playerName.trim() === "") {
+      isManualAction.current = false;
       return setErrorMsg("Por favor, digite o seu nome primeiro.");
+    }
+
     const randomCode = Math.floor(1000 + Math.random() * 9000).toString();
-    socket.emit("createRoom", { roomId: randomCode, playerName });
+
+    socket.emit("createRoom", {
+      roomId: randomCode,
+      playerName,
+    });
   };
 
   const startCPUGame = () => {
     isManualAction.current = true;
-    if (playerName.trim() === "")
+
+    if (playerName.trim() === "") {
+      isManualAction.current = false;
       return setErrorMsg("Por favor, digite o seu nome primeiro.");
+    }
 
     const cpuRoomCode =
       "CPU-" + Math.floor(1000 + Math.random() * 9000).toString();
+
     setRoomId(cpuRoomCode);
+    setIsWaiting(false);
 
     socket.emit("createRoomVsCPU", {
       roomId: cpuRoomCode,
@@ -170,16 +223,31 @@ function App() {
 
   const joinRoom = () => {
     isManualAction.current = true;
-    if (playerName.trim() === "")
+
+    if (playerName.trim() === "") {
+      isManualAction.current = false;
       return setErrorMsg("Por favor, digite o seu nome primeiro.");
-    if (joinCode.trim() === "")
+    }
+
+    if (joinCode.trim() === "") {
+      isManualAction.current = false;
       return setErrorMsg("Por favor, digite o código da sala.");
-    setRoomId(joinCode);
-    socket.emit("joinRoom", { roomId: joinCode, playerName });
+    }
+
+    const normalizedCode = joinCode.trim();
+
+    setRoomId(normalizedCode);
+
+    socket.emit("joinRoom", {
+      roomId: normalizedCode,
+      playerName,
+    });
   };
 
   const requestLeaveRoom = () => setShowLeaveModal(true);
+
   const cancelLeaveRoom = () => setShowLeaveModal(false);
+
   const confirmLeaveRoom = () => {
     socket.emit("leaveRoom", roomId);
     resetToLobby();
@@ -332,13 +400,21 @@ function App() {
               <div className="flex bg-gray-100 dark:bg-gray-700 rounded-lg p-1">
                 <button
                   onClick={() => setPlayVsCPU(false)}
-                  className={`flex-1 flex items-center justify-center gap-2 py-2 rounded-md text-sm font-bold transition-all ${!playVsCPU ? "bg-white dark:bg-gray-600 text-jaipur-green shadow-sm" : "text-gray-500 dark:text-gray-400 hover:bg-gray-200 dark:hover:bg-gray-600"}`}
+                  className={`flex-1 flex items-center justify-center gap-2 py-2 rounded-md text-sm font-bold transition-all ${
+                    !playVsCPU
+                      ? "bg-white dark:bg-gray-600 text-jaipur-green shadow-sm"
+                      : "text-gray-500 dark:text-gray-400 hover:bg-gray-200 dark:hover:bg-gray-600"
+                  }`}
                 >
                   <FaUserFriends /> Amigos
                 </button>
                 <button
                   onClick={() => setPlayVsCPU(true)}
-                  className={`flex-1 flex items-center justify-center gap-2 py-2 rounded-md text-sm font-bold transition-all ${playVsCPU ? "bg-jaipur-gold text-white shadow-sm" : "text-gray-500 dark:text-gray-400 hover:bg-gray-200 dark:hover:bg-gray-600"}`}
+                  className={`flex-1 flex items-center justify-center gap-2 py-2 rounded-md text-sm font-bold transition-all ${
+                    playVsCPU
+                      ? "bg-jaipur-gold text-white shadow-sm"
+                      : "text-gray-500 dark:text-gray-400 hover:bg-gray-200 dark:hover:bg-gray-600"
+                  }`}
                 >
                   <FaRobot /> Bot
                 </button>

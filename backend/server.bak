@@ -17,59 +17,13 @@ const { executeBotTurn } = require("./cpuBot");
 const app = express();
 const server = http.createServer(app);
 const io = new Server(server, { cors: { origin: "*" } });
-
 const rooms = {};
-const reconnectTimers = {};
-const RECONNECT_GRACE_MS = 2 * 60 * 1000;
-
-function normalizeName(name) {
-  return String(name || "")
-    .trim()
-    .toLowerCase();
-}
-
-function clearReconnectTimer(roomId) {
-  if (reconnectTimers[roomId]) {
-    clearTimeout(reconnectTimers[roomId]);
-    delete reconnectTimers[roomId];
-  }
-}
-
-function scheduleRoomCleanup(roomId) {
-  clearReconnectTimer(roomId);
-
-  reconnectTimers[roomId] = setTimeout(() => {
-    const room = rooms[roomId];
-
-    if (!room) {
-      delete reconnectTimers[roomId];
-      return;
-    }
-
-    const hostConnected = room.connectionStatus?.host === true;
-    const challengerConnected =
-      room.players.challenger === "CPU" ||
-      room.connectionStatus?.challenger === true;
-
-    if (!hostConnected && !challengerConnected) {
-      delete rooms[roomId];
-    }
-
-    delete reconnectTimers[roomId];
-  }, RECONNECT_GRACE_MS);
-}
-
-function safelyDeleteRoom(roomId) {
-  clearReconnectTimer(roomId);
-  delete rooms[roomId];
-}
 
 // ==========================================
 // FILTRAGEM DO ESTADO
 // ==========================================
 function getFilteredState(gameState, playerId) {
   if (!gameState) return null;
-
   const stateCopy = JSON.parse(JSON.stringify(gameState));
   const opponentId = Object.keys(stateCopy.players).find(
     (id) => id !== playerId,
@@ -78,108 +32,35 @@ function getFilteredState(gameState, playerId) {
   if (opponentId && stateCopy.players[opponentId]) {
     stateCopy.players[opponentId].handCount =
       stateCopy.players[opponentId].hand.length;
-
     if (!stateCopy.roundEndStats) {
       delete stateCopy.players[opponentId].hand;
     }
   }
 
-  if (Array.isArray(stateCopy.tokens.bonus3)) {
+  if (Array.isArray(stateCopy.tokens.bonus3))
     stateCopy.tokens.bonus3 = stateCopy.tokens.bonus3.length;
-  }
-
-  if (Array.isArray(stateCopy.tokens.bonus4)) {
+  if (Array.isArray(stateCopy.tokens.bonus4))
     stateCopy.tokens.bonus4 = stateCopy.tokens.bonus4.length;
-  }
-
-  if (Array.isArray(stateCopy.tokens.bonus5)) {
+  if (Array.isArray(stateCopy.tokens.bonus5))
     stateCopy.tokens.bonus5 = stateCopy.tokens.bonus5.length;
-  }
 
   stateCopy.isMyTurn = stateCopy.currentTurn === playerId;
-
   return stateCopy;
 }
 
 const countItems = (arr) => {
   const counts = {};
   arr.forEach((item) => (counts[item] = (counts[item] || 0) + 1));
-
   return Object.entries(counts)
     .map(([name, qty]) => `${qty} ${name}`)
     .join(" e ");
 };
 
-function replacePlayerIdInGameState(room, oldId, newId) {
-  if (!room.gameState || !oldId || oldId === newId) return;
-
-  if (room.gameState.players?.[oldId]) {
-    room.gameState.players[newId] = room.gameState.players[oldId];
-    delete room.gameState.players[oldId];
-  }
-
-  if (room.gameState.currentTurn === oldId) {
-    room.gameState.currentTurn = newId;
-  }
-
-  if (room.gameState.roundEndStats) {
-    if (room.gameState.roundEndStats.roundWinnerId === oldId) {
-      room.gameState.roundEndStats.roundWinnerId = newId;
-    }
-
-    if (room.gameState.roundEndStats.matchWinnerId === oldId) {
-      room.gameState.roundEndStats.matchWinnerId = newId;
-    }
-  }
-}
-
-function emitStateToPlayers(room) {
-  if (!room || !room.gameState) return;
-
-  if (room.players.host) {
-    io.to(room.players.host).emit(
-      "updateGameState",
-      getFilteredState(room.gameState, room.players.host),
-    );
-  }
-
-  if (room.players.challenger && room.players.challenger !== "CPU") {
-    io.to(room.players.challenger).emit(
-      "updateGameState",
-      getFilteredState(room.gameState, room.players.challenger),
-    );
-  }
-}
-
-function reconnectExistingPlayer(socket, roomId, room, role) {
-  const oldId = room.players[role];
-  const newId = socket.id;
-
-  clearReconnectTimer(roomId);
-
-  room.players[role] = newId;
-  room.connectionStatus[role] = true;
-
-  socket.join(roomId);
-
-  replacePlayerIdInGameState(room, oldId, newId);
-
-  if (room.gameState) {
-    socket.emit("gameReady", "Reconectado!");
-    socket.emit("updateGameState", getFilteredState(room.gameState, newId));
-  } else {
-    socket.emit("waitingRestored", { roomId });
-  }
-
-  socket.to(roomId).emit("opponentReconnected");
-}
-
 // ==========================================
-// MOTOR CENTRAL
+// MOTOR CENTRAL (HUMANOS E CPU USAM ISTO)
 // ==========================================
 function processAction(roomId, playerId, actionData, socket = null) {
   const room = rooms[roomId];
-
   if (!room || !room.gameState || room.gameState.currentTurn !== playerId) {
     if (socket) socket.emit("errorMsg", "Não é o seu turno!");
     return;
@@ -187,7 +68,6 @@ function processAction(roomId, playerId, actionData, socket = null) {
 
   const playerName =
     playerId === room.players.host ? room.names.host : room.names.challenger;
-
   const pt = {
     diamond: "Diamante(s)",
     gold: "Ouro(s)",
@@ -209,27 +89,19 @@ function processAction(roomId, playerId, actionData, socket = null) {
       const takenNames = actionData.payload.marketIndices.map(
         (i) => pt[room.gameState.market[i]],
       );
-
       const givenNames = actionData.payload.handIndices.map(
         (i) => pt[room.gameState.players[playerId].hand[i]],
       );
-
-      for (let i = 0; i < actionData.payload.herdCount; i++) {
+      for (let i = 0; i < actionData.payload.herdCount; i++)
         givenNames.push("Camelo(s)");
-      }
 
-      logMsg = `${playerName} trocou ${countItems(givenNames)} por ${countItems(
-        takenNames,
-      )}.`;
-
+      logMsg = `${playerName} trocou ${countItems(givenNames)} por ${countItems(takenNames)}.`;
       handleTakeSeveral(room.gameState, playerId, actionData.payload);
     } else if (actionData.type === "TAKE_CAMELS") {
       const camelsCount = room.gameState.market.filter(
         (c) => c === "camel",
       ).length;
-
       logMsg = `${playerName} pegou ${camelsCount} Camelo(s) do mercado.`;
-
       handleTakeCamels(room.gameState, playerId);
     } else if (actionData.type === "SELL_GOODS") {
       const count = actionData.payload.handIndices.length;
@@ -237,19 +109,14 @@ function processAction(roomId, playerId, actionData, socket = null) {
         room.gameState.players[playerId].hand[
           actionData.payload.handIndices[0]
         ];
-
       logMsg = `${playerName} vendeu ${count} ${pt[cardType]}.`;
-
       handleSellGoods(room.gameState, playerId, actionData.payload);
     } else {
       throw new Error("Ação inválida.");
     }
 
     room.gameState.logs.unshift(logMsg);
-
-    if (room.gameState.logs.length > 8) {
-      room.gameState.logs.pop();
-    }
+    if (room.gameState.logs.length > 8) room.gameState.logs.pop();
 
     if (checkRoundEnd(room.gameState)) {
       room.gameState.roundEndStats = processRoundEnd(
@@ -257,7 +124,6 @@ function processAction(roomId, playerId, actionData, socket = null) {
         room.players.host,
         room.players.challenger,
       );
-
       room.gameState.currentTurn = null;
     } else {
       room.gameState.currentTurn = Object.keys(room.gameState.players).find(
@@ -265,7 +131,18 @@ function processAction(roomId, playerId, actionData, socket = null) {
       );
     }
 
-    emitStateToPlayers(room);
+    if (room.players.host) {
+      io.to(room.players.host).emit(
+        "updateGameState",
+        getFilteredState(room.gameState, room.players.host),
+      );
+    }
+    if (room.players.challenger && room.players.challenger !== "CPU") {
+      io.to(room.players.challenger).emit(
+        "updateGameState",
+        getFilteredState(room.gameState, room.players.challenger),
+      );
+    }
 
     if (room.gameState.currentTurn === "CPU" && !room.gameState.roundEndStats) {
       executeBotTurn(roomId, room.gameState, room.cpuDifficulty, processAction);
@@ -280,138 +157,103 @@ function processAction(roomId, playerId, actionData, socket = null) {
 }
 
 // ==========================================
-// SOCKET.IO
+// SOCKET.IO - GESTÃO DE SALAS E EVENTOS
 // ==========================================
 io.on("connection", (socket) => {
   socket.on("createRoom", ({ roomId, playerName }) => {
-    if (Object.keys(rooms).length >= 5) {
+    if (Object.keys(rooms).length >= 5)
       return socket.emit("errorMsg", "Servidor cheio (Máx 5 salas).");
+    if (!rooms[roomId]) {
+      socket.join(roomId);
+      rooms[roomId] = {
+        players: { host: socket.id, challenger: null },
+        names: { host: playerName, challenger: null },
+        gameState: null,
+      };
+      socket.emit("roomCreated", roomId);
     }
-
-    if (rooms[roomId]) {
-      return socket.emit("errorMsg", "Esta sala já existe. Tente novamente.");
-    }
-
-    socket.join(roomId);
-
-    rooms[roomId] = {
-      players: { host: socket.id, challenger: null },
-      names: { host: playerName, challenger: null },
-      gameState: null,
-      isCPUGame: false,
-      connectionStatus: { host: true, challenger: false },
-    };
-
-    socket.emit("roomCreated", roomId);
   });
 
   socket.on("createRoomVsCPU", ({ roomId, playerName, difficulty }) => {
-    if (Object.keys(rooms).length >= 5) {
+    if (Object.keys(rooms).length >= 5)
       return socket.emit("errorMsg", "Servidor cheio (Máx 5 salas).");
-    }
-
-    if (rooms[roomId]) {
-      return socket.emit("errorMsg", "Esta sala já existe. Tente novamente.");
-    }
-
     socket.join(roomId);
-
     rooms[roomId] = {
       players: { host: socket.id, challenger: "CPU" },
       names: { host: playerName, challenger: "🤖 " + difficulty },
       gameState: null,
       isCPUGame: true,
       cpuDifficulty: difficulty,
-      connectionStatus: { host: true, challenger: true },
     };
-
     const room = rooms[roomId];
-
     room.gameState = initializeGame(room.players.host, room.players.challenger);
     room.gameState.players[room.players.host].name = room.names.host;
     room.gameState.players[room.players.challenger].name =
       room.names.challenger;
-
     socket.emit("gameReady", "Começou contra a CPU!");
     socket.emit(
       "updateGameState",
       getFilteredState(room.gameState, room.players.host),
     );
-
-    if (room.gameState.currentTurn === "CPU" && !room.gameState.roundEndStats) {
-      executeBotTurn(roomId, room.gameState, room.cpuDifficulty, processAction);
-    }
   });
 
   socket.on("joinRoom", ({ roomId, playerName }) => {
     const room = rooms[roomId];
+    if (!room) return socket.emit("errorMsg", "Sala não encontrada.");
+    const normName = playerName.trim().toLowerCase();
+    const hostName = room.names.host
+      ? room.names.host.trim().toLowerCase()
+      : "";
+    const chalName = room.names.challenger
+      ? room.names.challenger.trim().toLowerCase()
+      : "";
 
-    if (!room) {
-      return socket.emit("errorMsg", "Sala não encontrada.");
-    }
+    const handleReconnect = (role) => {
+      const oldId = room.players[role];
+      const newId = socket.id;
+      room.players[role] = newId;
+      socket.join(roomId);
+      if (room.gameState && oldId && oldId !== newId) {
+        room.gameState.players[newId] = room.gameState.players[oldId];
+        delete room.gameState.players[oldId];
+        if (room.gameState.currentTurn === oldId)
+          room.gameState.currentTurn = newId;
+      }
+      if (room.gameState) {
+        io.to(newId).emit(
+          "updateGameState",
+          getFilteredState(room.gameState, newId),
+        );
+      }
+      io.to(roomId).emit("gameReady", "Reconectado!");
+    };
 
-    const normName = normalizeName(playerName);
-    const hostName = normalizeName(room.names.host);
-    const chalName = normalizeName(room.names.challenger);
-
-    if (hostName === normName) {
-      return reconnectExistingPlayer(socket, roomId, room, "host");
-    }
-
-    if (room.players.challenger !== "CPU" && chalName === normName) {
-      return reconnectExistingPlayer(socket, roomId, room, "challenger");
-    }
+    if (hostName === normName) return handleReconnect("host");
+    if (chalName === normName) return handleReconnect("challenger");
 
     if (!room.players.challenger) {
       socket.join(roomId);
-
       room.players.challenger = socket.id;
       room.names.challenger = playerName;
-      room.connectionStatus.challenger = true;
-
       room.gameState = initializeGame(
         room.players.host,
         room.players.challenger,
       );
-
       room.gameState.players[room.players.host].name = room.names.host;
       room.gameState.players[room.players.challenger].name =
         room.names.challenger;
-
       io.to(roomId).emit("gameReady", "Começou!");
-
-      emitStateToPlayers(room);
+      io.to(room.players.host).emit(
+        "updateGameState",
+        getFilteredState(room.gameState, room.players.host),
+      );
+      io.to(room.players.challenger).emit(
+        "updateGameState",
+        getFilteredState(room.gameState, room.players.challenger),
+      );
     } else {
       socket.emit("errorMsg", "Esta sala já está cheia.");
     }
-  });
-
-  socket.on("reconnectRoom", ({ roomId, playerName }) => {
-    const room = rooms[roomId];
-
-    if (!room) {
-      return socket.emit(
-        "restoreFailed",
-        "A sala anterior não foi encontrada. Ela pode ter expirado ou o servidor pode ter reiniciado.",
-      );
-    }
-
-    const normName = normalizeName(playerName);
-    const hostName = normalizeName(room.names.host);
-    const chalName = normalizeName(room.names.challenger);
-
-    if (hostName === normName) {
-      return reconnectExistingPlayer(socket, roomId, room, "host");
-    }
-
-    if (room.players.challenger !== "CPU" && chalName === normName) {
-      return reconnectExistingPlayer(socket, roomId, room, "challenger");
-    }
-
-    return socket.emit(
-      "restoreFailed",
-      "Não foi possível restaurar a partida com este nome de jogador.",
-    );
   });
 
   socket.on("playAction", (roomId, actionData) => {
@@ -420,102 +262,89 @@ io.on("connection", (socket) => {
 
   socket.on("requestNextRound", (roomId) => {
     const room = rooms[roomId];
-
     if (!room || !room.gameState || !room.gameState.roundEndStats) return;
-
     const winnerId = room.gameState.roundEndStats.roundWinnerId;
     const loserId =
       Object.keys(room.gameState.players).find((id) => id !== winnerId) ||
       room.players.host;
-
     room.gameState.roundEndStats = null;
     room.gameState = resetGameForNewRound(room.gameState, loserId);
-
     room.gameState.players[room.players.host].name = room.names.host;
     room.gameState.players[room.players.challenger].name =
       room.names.challenger;
 
-    emitStateToPlayers(room);
-
-    if (room.gameState.currentTurn === "CPU") {
+    if (room.players.host)
+      io.to(room.players.host).emit(
+        "updateGameState",
+        getFilteredState(room.gameState, room.players.host),
+      );
+    if (room.players.challenger && room.players.challenger !== "CPU")
+      io.to(room.players.challenger).emit(
+        "updateGameState",
+        getFilteredState(room.gameState, room.players.challenger),
+      );
+    if (room.gameState.currentTurn === "CPU")
       executeBotTurn(roomId, room.gameState, room.cpuDifficulty, processAction);
-    }
   });
 
+  // NOVO: Lida com a saída respeitando o fim de jogo
   socket.on("leaveRoom", (roomId) => {
     const room = rooms[roomId];
+    if (room) {
+      const isMatchOver = room.gameState?.roundEndStats?.matchWinnerId;
 
-    if (!room) return;
+      if (room.players.host === socket.id) room.players.host = null;
+      if (room.players.challenger === socket.id) room.players.challenger = null;
+      socket.leave(roomId);
 
-    const isMatchOver = room.gameState?.roundEndStats?.matchWinnerId;
-
-    if (room.players.host === socket.id) {
-      room.connectionStatus.host = false;
-    }
-
-    if (room.players.challenger === socket.id) {
-      room.connectionStatus.challenger = false;
-    }
-
-    socket.leave(roomId);
-
-    if (isMatchOver) {
-      socket.to(roomId).emit("opponentLeftPostGame");
-
-      const hostConnected = room.connectionStatus.host === true;
-      const challengerConnected =
-        room.players.challenger === "CPU" ||
-        room.connectionStatus.challenger === true;
-
-      if (!hostConnected && !challengerConnected) {
-        safelyDeleteRoom(roomId);
+      if (isMatchOver) {
+        socket.to(roomId).emit("opponentLeftPostGame");
+        if (
+          !room.players.host &&
+          (!room.players.challenger || room.players.challenger === "CPU")
+        )
+          delete rooms[roomId];
+      } else {
+        socket.to(roomId).emit("opponentDisconnected");
+        delete rooms[roomId];
       }
-
-      return;
     }
-
-    socket.to(roomId).emit("opponentDisconnected");
-    safelyDeleteRoom(roomId);
   });
 
   socket.on("disconnect", () => {
     for (const roomId in rooms) {
       const room = rooms[roomId];
-
       if (
         room.players.host === socket.id ||
         room.players.challenger === socket.id
       ) {
         const isMatchOver = room.gameState?.roundEndStats?.matchWinnerId;
 
-        if (room.players.host === socket.id) {
-          room.connectionStatus.host = false;
-        }
-
-        if (room.players.challenger === socket.id) {
-          room.connectionStatus.challenger = false;
-        }
+        if (room.players.host === socket.id) room.players.host = null;
+        if (room.players.challenger === socket.id)
+          room.players.challenger = null;
 
         if (isMatchOver) {
           io.to(roomId).emit("opponentLeftPostGame");
+          if (
+            !room.players.host &&
+            (!room.players.challenger || room.players.challenger === "CPU")
+          )
+            delete rooms[roomId];
         } else {
-          socket.to(roomId).emit("opponentTemporarilyDisconnected");
+          io.to(roomId).emit("opponentDisconnected");
+          delete rooms[roomId];
         }
-
-        scheduleRoomCleanup(roomId);
       }
     }
-
     console.log(`Jogador desconectado: ${socket.id}`);
   });
 });
 
 app.use(express.static(path.join(__dirname, "../frontend/build")));
-
 app.get("*", (req, res) =>
   res.sendFile(path.join(__dirname, "../frontend/build", "index.html")),
 );
 
 const PORT = process.env.PORT || 3000;
-
 server.listen(PORT, () => console.log(`🚀 Servidor na porta ${PORT}`));
