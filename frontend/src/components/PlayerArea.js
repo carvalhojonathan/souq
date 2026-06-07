@@ -31,19 +31,20 @@ export default function PlayerArea({
   const renderHand = () => {
     if (isOpponent) {
       return Array.from({ length: hand }).map((_, i) => (
-        // CARTAS COM TAMANHO MÁXIMO DEFINIDO
+        // Aumentado o min-w de 25px/28px para 35px! Assim as cartas não colam tanto.
         <div
           key={`opp-card-${i}`}
-          className="flex-shrink min-w-[25px] w-[55px] max-w-[55px] sm:w-[70px] sm:max-w-[70px] md:w-[85px] md:max-w-[85px] transition-all duration-300"
+          className="flex-shrink min-w-[35px] w-[55px] max-w-[55px] sm:w-[70px] sm:max-w-[70px] md:w-[85px] md:max-w-[85px] transition-all duration-300"
         >
           <Card type="back" hidden={true} />
         </div>
       ));
     } else {
       return hand.map((cardType, index) => (
+        // Aumentado ligeiramente o do jogador para 40px
         <div
           key={`my-card-${index}`}
-          className="flex-shrink min-w-[30px] w-[65px] max-w-[65px] sm:w-[80px] sm:max-w-[80px] md:w-[95px] md:max-w-[95px] transition-all duration-300"
+          className="flex-shrink min-w-[40px] w-[65px] max-w-[65px] sm:w-[80px] sm:max-w-[80px] md:w-[95px] md:max-w-[95px] transition-all duration-300"
         >
           <Card
             type={cardType}

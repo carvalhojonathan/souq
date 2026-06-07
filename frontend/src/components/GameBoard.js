@@ -158,7 +158,6 @@ export default function GameBoard({
             className="shadow-sm rounded-xl dark:bg-gray-800 dark:border-gray-700"
           />
 
-          {/* Oponente */}
           <PlayerArea
             isOpponent={true}
             playerName={opponent.name}
@@ -169,8 +168,8 @@ export default function GameBoard({
             className="shadow-sm rounded-xl dark:bg-gray-800 dark:border-gray-700"
           />
 
-          {/* Histórico separado, com margem e borda VERDE */}
-          <div className="mt-1 md:mt-2 max-h-24 md:max-h-32 overflow-hidden bg-white dark:bg-gray-900 rounded-xl shadow-sm border-2 border-jaipur-green dark:border-green-700/50 transition-colors">
+          {/* Histórico com altura aumentada (max-h-48) e scroll caso necessário */}
+          <div className="mt-1 md:mt-2 max-h-48 md:max-h-60 overflow-y-auto custom-scrollbar bg-white dark:bg-gray-900 rounded-xl shadow-sm border-2 border-jaipur-green dark:border-green-700/50 transition-colors">
             <ActionLog logs={gameState.logs} />
           </div>
         </div>
