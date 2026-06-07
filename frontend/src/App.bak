@@ -59,14 +59,10 @@ function App() {
     localStorage.setItem("jaipur_isWaiting", isWaiting);
   }, [playerName, roomId, joinCode, inGame, isWaiting]);
 
-  // Efeito de reconexão automática ao dar Refresh
   useEffect(() => {
-    const reconnect = setTimeout(() => {
-      if ((inGame || isWaiting) && roomId && playerName) {
-        socket.emit("joinRoom", { roomId, playerName });
-      }
-    }, 500);
-    return () => clearTimeout(reconnect);
+    if ((inGame || isWaiting) && roomId && playerName) {
+      socket.emit("joinRoom", { roomId, playerName });
+    }
   }, []);
 
   const resetToLobby = () => {
@@ -116,6 +112,7 @@ function App() {
       resetToLobby();
     });
 
+    // NOVO EVENTO: Se o oponente sair apenas no fim da partida, não encerra o jogo para si.
     socket.on("opponentLeftPostGame", () => {
       setOpponentConnected(false);
     });
