@@ -1,20 +1,40 @@
 // backend/cpuBot.js
 
 // ==========================================
-// FUNÇÕES AUXILIARES DE LEITURA DA MESA
+// CPU BOT - ROTA DOS CAMELOS
+// ==========================================
+// Fácil: joga simples.
+// Médio: joga razoavelmente.
+// Mestre do Souq:
+// - prioridade máxima para diamante/ouro/prata no mercado;
+// - busca formar grupos próprios de 4 e 5;
+// - bloqueia grupos de 4 e 5 do jogador;
+// - vende luxo no fim da rodada;
+// - evita pegar camelos quando isso abre cartas boas para o jogador;
+// - joga entre 3 e 10 segundos.
 // ==========================================
 
 const BOT_ID = "CPU";
 
 const GOODS = ["diamond", "gold", "silver", "cloth", "spice", "leather"];
 const LUXURY = ["diamond", "gold", "silver"];
+const COMMON_GOODS = ["cloth", "spice", "leather"];
 
 function isLuxury(type) {
   return LUXURY.includes(type);
 }
 
+function isCommonGood(type) {
+  return COMMON_GOODS.includes(type);
+}
+
 function getOpponentId(gameState) {
   return Object.keys(gameState.players).find((id) => id !== BOT_ID);
+}
+
+function getOpponent(gameState) {
+  const oppId = getOpponentId(gameState);
+  return gameState.players[oppId];
 }
 
 function getTopTokenValue(gameState, type) {
@@ -30,27 +50,25 @@ function getTokenCount(gameState, type) {
   return gameState.tokens[type].length;
 }
 
-function getExactBonus(gameState, count) {
-  const pile =
-    count === 3
-      ? "bonus3"
-      : count === 4
-        ? "bonus4"
-        : count >= 5
-          ? "bonus5"
-          : null;
+function countCards(cards) {
+  const counts = {};
 
-  if (!pile) return 0;
+  cards.forEach((card) => {
+    counts[card] = (counts[card] || 0) + 1;
+  });
 
-  if (gameState.tokens[pile] && gameState.tokens[pile].length > 0) {
-    return gameState.tokens[pile][0].value || 0;
-  }
+  return counts;
+}
 
-  if (count === 3) return 2.5;
-  if (count === 4) return 5;
-  if (count >= 5) return 9;
+function countInArray(cards, type) {
+  return cards.filter((card) => card === type).length;
+}
 
-  return 0;
+function getBonusPileName(count) {
+  if (count === 3) return "bonus3";
+  if (count === 4) return "bonus4";
+  if (count >= 5) return "bonus5";
+  return null;
 }
 
 function getExpectedBonus(count) {
@@ -60,29 +78,29 @@ function getExpectedBonus(count) {
   return 0;
 }
 
-function countInArray(arr, type) {
-  return arr.filter((card) => card === type).length;
+function getExactBonus(gameState, count) {
+  const pileName = getBonusPileName(count);
+
+  if (!pileName) return 0;
+
+  const pile = gameState.tokens[pileName];
+
+  if (pile && pile.length > 0) {
+    return pile[0].value || 0;
+  }
+
+  return getExpectedBonus(count);
 }
 
-function countCards(arr) {
-  const counts = {};
-
-  arr.forEach((card) => {
-    counts[card] = (counts[card] || 0) + 1;
-  });
-
-  return counts;
-}
-
-function getSalePoints(gameState, type, count, exactBonus = false) {
-  let points = 0;
+function getSalePoints(gameState, type, count, useExactBonus = false) {
   const tokens = gameState.tokens[type] || [];
+  let points = 0;
 
   for (let i = 0; i < count && i < tokens.length; i++) {
     points += tokens[i].value || 0;
   }
 
-  points += exactBonus
+  points += useExactBonus
     ? getExactBonus(gameState, count)
     : getExpectedBonus(count);
 
@@ -95,6 +113,10 @@ function getEmptyStacksCount(gameState) {
 
 function isEndgame(gameState) {
   return getEmptyStacksCount(gameState) >= 2 || gameState.deck.length <= 6;
+}
+
+function isUrgentEndgame(gameState) {
+  return getEmptyStacksCount(gameState) >= 2 || gameState.deck.length <= 10;
 }
 
 function getNextRevealedCards(gameState, amount) {
@@ -128,7 +150,6 @@ function combinations(arr, size) {
   }
 
   backtrack(0, []);
-
   return result;
 }
 
@@ -148,27 +169,111 @@ function uniqueMoves(moves) {
   return result;
 }
 
-function getMoveDebugName(gameState, move) {
-  if (move.type === "TAKE_ONE") {
-    return `pegar ${gameState.market[move.payload.marketIndex]}`;
+function botHasSellableLuxury(gameState) {
+  const bot = gameState.players[BOT_ID];
+  const counts = countCards(bot.hand);
+
+  return LUXURY.some((type) => (counts[type] || 0) >= 2);
+}
+
+function getBestImmediateLuxurySale(gameState) {
+  const bot = gameState.players[BOT_ID];
+  const groupedHand = {};
+
+  bot.hand.forEach((card, index) => {
+    if (!groupedHand[card]) groupedHand[card] = [];
+    groupedHand[card].push(index);
+  });
+
+  let bestMove = null;
+  let bestScore = -Infinity;
+
+  for (const type of LUXURY) {
+    const indices = groupedHand[type] || [];
+
+    if (indices.length < 2) continue;
+
+    const count = indices.length;
+    const points = getSalePoints(gameState, type, count, true);
+    const topToken = getTopTokenValue(gameState, type);
+    const remainingTokens = getTokenCount(gameState, type);
+
+    let score = points * 100 + topToken * 20;
+
+    if (type === "diamond") score += 300;
+    if (type === "gold") score += 220;
+    if (type === "silver") score += 150;
+
+    if (remainingTokens <= count) score += 250;
+    if (remainingTokens <= 2) score += 150;
+    if (count >= 3) score += 120;
+
+    if (score > bestScore) {
+      bestScore = score;
+      bestMove = {
+        type: "SELL_GOODS",
+        payload: {
+          handIndices: indices.slice(0, count),
+        },
+      };
+    }
   }
 
-  if (move.type === "TAKE_CAMELS") {
-    return "pegar camelos";
+  return bestMove;
+}
+
+// Quanto vale formar conjunto próprio.
+function getOwnSetPriority(type, currentCount, addedCount) {
+  if (!isCommonGood(type)) return 0;
+
+  const after = currentCount + addedCount;
+
+  if (after >= 5) return 320;
+  if (after === 4) return 220;
+  if (after === 3) return 95;
+  if (after === 2) return 25;
+
+  return 0;
+}
+
+// Quanto vale bloquear conjunto do jogador.
+function getOpponentSetThreat(type, opponentCount, cardsRemovedFromMarket = 1) {
+  if (!isCommonGood(type)) return 0;
+
+  const wouldHave = opponentCount + cardsRemovedFromMarket;
+
+  // Se o jogador já tem 4, qualquer carta igual no mercado ameaça venda de 5.
+  if (opponentCount >= 4) return 260;
+
+  // Se tem 3, uma carta no mercado leva a 4; duas podem levar a 5.
+  if (opponentCount === 3) {
+    return cardsRemovedFromMarket >= 2 ? 240 : 180;
   }
 
-  if (move.type === "SELL_GOODS") {
-    const bot = gameState.players[BOT_ID];
-    const type = bot.hand[move.payload.handIndices[0]];
-    return `vender ${move.payload.handIndices.length} ${type}`;
+  // Se tem 2, bloquear 3 é útil, mas não pode superar luxo nem conjunto próprio forte.
+  if (opponentCount === 2) {
+    return cardsRemovedFromMarket >= 2 ? 120 : 75;
   }
 
-  if (move.type === "TAKE_SEVERAL") {
-    const takes = move.payload.marketIndices.map((i) => gameState.market[i]);
-    return `trocar por ${takes.join(", ")}`;
+  return 0;
+}
+
+// Penalidade por entregar carta que ajuda o jogador.
+function getFeedingPenalty(type, opponentCount) {
+  if (isLuxury(type)) {
+    if (opponentCount >= 2) return 260;
+    if (opponentCount === 1) return 180;
+    return 90;
   }
 
-  return move.type;
+  if (isCommonGood(type)) {
+    if (opponentCount >= 4) return 240;
+    if (opponentCount === 3) return 170;
+    if (opponentCount === 2) return 95;
+    if (opponentCount === 1) return 35;
+  }
+
+  return 0;
 }
 
 // ==========================================
@@ -182,9 +287,6 @@ function getValidMoves(gameState, botId) {
   if (!bot) return moves;
 
   // 1. VENDER MERCADORIAS
-  // Agora gera vendas parciais também.
-  // Exemplo: se tiver 5 couros, ele avalia vender 1, 2, 3, 4 ou 5.
-  // Para luxo, mínimo continua sendo 2.
   const groupedHand = {};
 
   bot.hand.forEach((card, index) => {
@@ -211,7 +313,7 @@ function getValidMoves(gameState, botId) {
   }
 
   // 2. PEGAR CAMELOS
-  const camelCount = gameState.market.filter((c) => c === "camel").length;
+  const camelCount = countInArray(gameState.market, "camel");
 
   if (camelCount > 0) {
     moves.push({
@@ -220,7 +322,7 @@ function getValidMoves(gameState, botId) {
     });
   }
 
-  // 3. COMPRAR 1 CARTA
+  // 3. PEGAR UMA CARTA
   if (bot.hand.length < 7) {
     gameState.market.forEach((card, index) => {
       if (card !== "camel") {
@@ -235,8 +337,6 @@ function getValidMoves(gameState, botId) {
   }
 
   // 4. TROCAR CARTAS
-  // Agora gera várias combinações, não só "pegar as maiores fichas".
-  // Isso deixa o bot encontrar trocas de 4 e 5, principalmente usando camelos.
   const marketGoods = gameState.market
     .map((type, index) => ({
       type,
@@ -306,14 +406,15 @@ function getValidMoves(gameState, botId) {
 
 function evaluateMove(gameState, move, difficulty) {
   const bot = gameState.players[BOT_ID];
-  const oppId = getOpponentId(gameState);
-  const opp = gameState.players[oppId];
+  const opp = getOpponent(gameState);
 
   const botHandCounts = countCards(bot.hand);
   const oppHandCounts = countCards(opp.hand);
 
   const endgame = isEndgame(gameState);
-  const emptyTokenStacks = getEmptyStacksCount(gameState);
+  const urgentEndgame = isUrgentEndgame(gameState);
+  const emptyStacks = getEmptyStacksCount(gameState);
+  const hasSellableLuxury = botHasSellableLuxury(gameState);
 
   let score = 0;
 
@@ -338,73 +439,94 @@ function evaluateMove(gameState, move, difficulty) {
       if (count < 3 && !luxury) score -= 15;
       if (luxury) score += 10;
       if (count >= 4) score += 8;
-    } else if (difficulty === "Mercador Experiente") {
+    }
+
+    if (difficulty === "Mercador Experiente") {
       if (luxury) score += 15;
       if (count < 3 && !luxury) score -= 30;
       if (count >= 4) score += 15;
+
       if (gameState.market.includes(goodType) && bot.hand.length < 7) {
         score -= 15;
       }
-    } else if (difficulty === "Mestre do Souq") {
-      const oppHas = oppHandCounts[goodType] || 0;
+    }
+
+    if (difficulty === "Mestre do Souq") {
       const botHas = botHandCounts[goodType] || 0;
+      const oppHas = oppHandCounts[goodType] || 0;
       const marketHas = countInArray(gameState.market, goodType);
-      const topToken = getTopTokenValue(gameState, goodType);
 
       score += points * 3;
 
-      if (endgame) {
-        score += 70;
-      }
+      if (endgame) score += 80;
+      if (urgentEndgame) score += 120;
 
-      // Luxo: vender pares/trincas é bom, mas se ainda tem a mesma carta no mercado,
-      // ele tenta pegar primeiro para vender mais forte.
       if (luxury) {
-        score += 45;
+        score += 90;
 
-        if (count >= 2) score += 25;
-        if (count >= 3) score += 35;
+        if (count >= 2) score += 120;
+        if (count >= 3) score += 180;
 
-        if (marketHas > 0 && bot.hand.length < 7 && !endgame) {
-          score -= 75;
+        // No fim da rodada, vender luxo é prioridade absoluta.
+        if (urgentEndgame) {
+          score += 550;
+          score += points * 20;
         }
 
-        // Se o oponente também tem luxo, vender antes é ótimo.
-        if (oppHas >= 2) score += 65;
-        if (oppHas >= 1 && availableTokens <= 2) score += 45;
+        if (endgame) {
+          score += 850;
+          score += points * 30;
+        }
+
+        if (bot.hand.length >= 6) score += 160;
+        if (availableTokens <= count) score += 180;
+        if (availableTokens <= 2) score += 120;
+
+        if (oppHas >= 1 && urgentEndgame) score += 140;
+        if (oppHas >= 2) score += 220;
+
+        // Só segura luxo para pegar mais se ainda houver bastante jogo.
+        if (marketHas > 0 && bot.hand.length < 7 && !urgentEndgame) {
+          score -= 80;
+        }
       }
 
-      // Mercadorias comuns: prioriza vendas grandes.
       if (!luxury) {
-        if (count === 1 && !endgame) score -= 70;
-        if (count === 2 && !endgame) score -= 40;
-        if (count === 3) score += 35;
-        if (count === 4) score += 95;
-        if (count >= 5) score += 150;
+        // Vender comum pequeno é ruim cedo; vender 4/5 é excelente.
+        if (count === 1 && !endgame) score -= 90;
+        if (count === 2 && !endgame) score -= 55;
+        if (count === 3) score += 55;
+        if (count === 4) score += 180;
+        if (count >= 5) score += 310;
 
-        // Se dá para completar 4/5 com algo no mercado, não vende antes.
+        // Se ainda dá para completar 4/5 com mercado, segura.
         if (marketHas > 0 && bot.hand.length < 7 && count < 5 && !endgame) {
-          score -= 55;
+          score -= 80;
+        }
+
+        // Se já tem 4, vender 4 é bom; mas se há carta igual no mercado e espaço, tentar 5.
+        if (
+          botHas === 4 &&
+          marketHas > 0 &&
+          bot.hand.length < 7 &&
+          !urgentEndgame
+        ) {
+          score -= 50;
+        }
+
+        // Se já tem 5, vende.
+        if (botHas >= 5) {
+          score += 260;
         }
       }
 
-      // Se a pilha está acabando, vender antes do oponente é muito valioso.
-      if (availableTokens <= count) {
-        score += 65;
+      if (availableTokens <= count) score += 70;
+      if (availableTokens <= 2 && getTopTokenValue(gameState, goodType) > 0) {
+        score += 40;
       }
 
-      if (availableTokens <= 2 && topToken > 0) {
-        score += 35;
-      }
-
-      // Se essa venda esvazia a terceira pilha e o bot já está bem pontuado, força o fim.
-      if (availableTokens <= count && emptyTokenStacks >= 2) {
-        score += 120;
-      }
-
-      // Penaliza vender tudo se ainda daria para buscar bônus maior.
-      if (!endgame && !luxury && botHas >= 3 && count < Math.min(5, botHas)) {
-        score -= 45;
+      if (availableTokens <= count && emptyStacks >= 2) {
+        score += 150;
       }
     }
   }
@@ -426,55 +548,83 @@ function evaluateMove(gameState, move, difficulty) {
 
     if (difficulty === "Comerciante distraído") {
       score += botHas * 2;
-    } else if (difficulty === "Mercador Experiente") {
+    }
+
+    if (difficulty === "Mercador Experiente") {
       score += botHas * 5;
       if (luxury) score += 10;
-    } else if (difficulty === "Mestre do Souq") {
+    }
+
+    if (difficulty === "Mestre do Souq") {
       score += val * 4;
-      score += botHas * 16;
+      score += botHas * 18;
+
+      // Se está no fim e já tem luxo vendável, vender é melhor que pegar mais.
+      if (urgentEndgame && hasSellableLuxury) score -= 700;
+      if (endgame && hasSellableLuxury) score -= 1100;
 
       if (luxury && availableTokens > 0) {
-        // PRIORIDADE ABSOLUTA: não deixar diamante/ouro/prata no mercado.
-        score += 220;
+        // Prioridade máxima: não deixar luxo no mercado.
+        score += 320;
 
-        if (type === "diamond") score += 50;
-        if (type === "gold") score += 40;
-        if (type === "silver") score += 30;
+        if (type === "diamond") score += 90;
+        if (type === "gold") score += 70;
+        if (type === "silver") score += 55;
 
-        // Formar par de luxo é uma das jogadas mais importantes.
-        if (botHas === 0) score += 30;
-        if (botHas === 1) score += 130;
-        if (botHas >= 2) score += 70;
+        if (botHas === 0) score += 35;
+        if (botHas === 1) score += 180;
+        if (botHas >= 2) score += 80;
 
-        // Bloqueio: se o jogador tem uma carta desse luxo, rouba para não fechar par.
-        if (oppHas >= 1) score += 110;
-        if (oppHas >= 2) score += 180;
+        if (oppHas >= 1) score += 150;
+        if (oppHas >= 2) score += 250;
 
-        // Se tem poucas fichas, corre mais ainda.
-        if (availableTokens <= 3) score += 60;
-        if (availableTokens <= 2) score += 90;
-      }
+        if (availableTokens <= 3) score += 85;
+        if (availableTokens <= 2) score += 130;
 
-      if (!luxury) {
-        if (botHas >= 2) score += 35;
-        if (botHas >= 3) score += 45;
+        // Se no fim ainda não tem luxo vendável e essa carta fecha par,
+        // aí sim pode pegar em vez de vender.
+        if (urgentEndgame && !hasSellableLuxury && botHas === 1) {
+          score += 340;
+        }
 
-        if (oppHas >= 2) score += 45;
-        if (oppHas >= 3) score += 70;
-
-        // Evita pegar carta comum solta quando isso só abre carta boa para o jogador.
-        if (botHas === 0 && opp.hand.length <= 5 && !endgame) {
-          score -= 25;
+        // Se já tem par de luxo no fim, não segurar.
+        if (urgentEndgame && botHas >= 2) {
+          score -= 650;
         }
       }
 
-      // Se pegar a carta completa 4 ou 5, prioridade alta.
-      if (!luxury && botHas + 1 === 4) score += 70;
-      if (!luxury && botHas + 1 >= 5) score += 110;
+      if (!luxury) {
+        // Formar os próprios grupos de 4/5.
+        score += getOwnSetPriority(type, botHas, 1);
 
-      // Se mão vai ficar cheia, só vale se for algo realmente bom.
+        // Bloquear o jogador de formar 4/5.
+        score += getOpponentSetThreat(type, oppHas, 1);
+
+        if (botHas >= 2) score += 40;
+        if (botHas >= 3) score += 55;
+
+        if (oppHas >= 2) score += 45;
+        if (oppHas >= 3) score += 65;
+
+        // Se ele está perto de 4/5, marcar é importante.
+        if (oppHas === 3) score += 80;
+        if (oppHas >= 4) score += 130;
+
+        // Mas carta comum solta não pode ser melhor que luxo.
+        if (botHas === 0 && oppHas < 2 && !endgame) {
+          score -= 35;
+        }
+
+        if (botHas === 0 && opp.hand.length <= 5 && !endgame) {
+          score -= 30;
+        }
+      }
+
+      if (!luxury && botHas + 1 === 4) score += 110;
+      if (!luxury && botHas + 1 >= 5) score += 180;
+
       if (bot.hand.length >= 6 && !luxury && botHas < 2) {
-        score -= 35;
+        score -= 45;
       }
     }
   }
@@ -498,45 +648,56 @@ function evaluateMove(gameState, move, difficulty) {
     let luxuryGiven = 0;
     let feedingScore = 0;
     let completionScore = 0;
+    let blockingScore = 0;
+    let ownSetScore = 0;
 
     takenTypes.forEach((type) => {
       const top = getTopTokenValue(gameState, type);
+      const alreadyHas = botHandCounts[type] || 0;
+      const opponentHas = oppHandCounts[type] || 0;
+      const addedCount = takenCounts[type] || 0;
+      const afterTake = alreadyHas + addedCount;
+
       valGained += top;
 
       if (isLuxury(type)) {
         luxuryTaken++;
-        valGained += 25;
-      }
+        valGained += 45;
 
-      const botAlreadyHas = botHandCounts[type] || 0;
-      const afterTake = botAlreadyHas + (takenCounts[type] || 0);
-
-      if (isLuxury(type)) {
-        if (afterTake >= 2) completionScore += 130;
-        if (afterTake >= 3) completionScore += 70;
+        if (afterTake >= 2) completionScore += 190;
+        if (afterTake >= 3) completionScore += 120;
       } else {
-        if (afterTake === 3) completionScore += 45;
-        if (afterTake === 4) completionScore += 115;
-        if (afterTake >= 5) completionScore += 180;
+        ownSetScore += getOwnSetPriority(type, alreadyHas, addedCount);
+        blockingScore += getOpponentSetThreat(type, opponentHas, addedCount);
+
+        if (afterTake === 3) completionScore += 70;
+        if (afterTake === 4) completionScore += 180;
+        if (afterTake >= 5) completionScore += 320;
       }
     });
 
     givenHandTypes.forEach((type) => {
+      const opponentHas = oppHandCounts[type] || 0;
+      const givenCount = givenCounts[type] || 0;
+
       valLost += getTopTokenValue(gameState, type);
 
       if (isLuxury(type)) {
         luxuryGiven++;
-        valLost += 90;
+        valLost += 130;
       }
 
-      // Não alimentar o jogador com carta que ele já coleciona.
-      if ((oppHandCounts[type] || 0) >= 1) {
-        feedingScore += isLuxury(type) ? 120 : 45;
+      // Penaliza perder progresso próprio em grupo comum.
+      if (isCommonGood(type)) {
+        const botHas = botHandCounts[type] || 0;
+
+        if (botHas >= 4) valLost += 170;
+        if (botHas === 3) valLost += 90;
+        if (botHas === 2) valLost += 35;
       }
 
-      if ((oppHandCounts[type] || 0) >= 2) {
-        feedingScore += isLuxury(type) ? 90 : 55;
-      }
+      // Penaliza alimentar o oponente.
+      feedingScore += getFeedingPenalty(type, opponentHas) * givenCount;
     });
 
     // Camelo é recurso de troca. Gasta, mas gastar para pegar luxo ou completar 4/5 vale.
@@ -544,57 +705,77 @@ function evaluateMove(gameState, move, difficulty) {
 
     score = (valGained - valLost) * 3;
 
-    if (luxuryTaken > 0) score += luxuryTaken * 140;
-    if (luxuryTaken >= 2) score += 140;
-    if (luxuryTaken >= 3) score += 220;
+    if (luxuryTaken > 0) score += luxuryTaken * 190;
+    if (luxuryTaken >= 2) score += 220;
+    if (luxuryTaken >= 3) score += 320;
 
-    if (luxuryGiven > 0) score -= luxuryGiven * 220;
+    if (luxuryGiven > 0) score -= luxuryGiven * 300;
 
     score += completionScore;
+    score += ownSetScore;
+    score += blockingScore;
 
     if (
       difficulty === "Mercador Experiente" ||
       difficulty === "Mestre do Souq"
     ) {
       if (score <= 0) score -= 40;
-      if (luxuryTaken >= 2) score += 40;
+      if (luxuryTaken >= 2) score += 50;
     }
 
     if (difficulty === "Mestre do Souq") {
       const tradeSize = move.payload.marketIndices.length;
 
-      // TROCAS DE 4 E 5 PRECISAM ACONTECER.
-      if (tradeSize === 4) score += 140;
-      if (tradeSize >= 5) score += 220;
+      // Se está no fim e já tem luxo vendável, vender é melhor que trocar.
+      if (urgentEndgame && hasSellableLuxury) score -= 500;
+      if (endgame && hasSellableLuxury) score -= 900;
 
-      // Usar camelos para trocas grandes é exatamente o objetivo deles.
-      if (givenCamelCount >= 2 && tradeSize >= 4) score += 75;
-      if (givenCamelCount >= 3 && tradeSize >= 5) score += 110;
+      // Trocas grandes são o coração do jogo.
+      if (tradeSize === 4) score += 190;
+      if (tradeSize >= 5) score += 310;
 
-      // Se a troca pega luxo, ela deve superar quase tudo.
-      if (
-        luxuryTaken > 0 &&
-        getTokenCount(gameState, takenTypes.find(isLuxury)) > 0
-      ) {
-        score += 130;
+      // Troca grande usando camelos é ótima.
+      if (givenCamelCount >= 2 && tradeSize >= 4) score += 120;
+      if (givenCamelCount >= 3 && tradeSize >= 5) score += 170;
+
+      if (luxuryTaken > 0) {
+        // Ainda é a maior prioridade.
+        score += 180;
       }
 
-      // Não dar cartas boas para o jogador.
+      // Se a troca forma grupo próprio 4/5, sobe muito.
+      if (ownSetScore >= 220) score += 120;
+      if (ownSetScore >= 320) score += 180;
+
+      // Se a troca bloqueia grupo 4/5 do jogador, também sobe.
+      if (blockingScore >= 180) score += 90;
+      if (blockingScore >= 260) score += 140;
+
+      // Não entregar carta boa ao jogador.
       score -= feedingScore;
 
-      // Evita trocar só por cartas comuns aleatórias sem formar conjunto.
-      if (luxuryTaken === 0 && completionScore < 50 && tradeSize <= 3) {
-        score -= 65;
+      // Evita troca pequena sem luxo, sem grupo próprio e sem bloqueio.
+      if (
+        luxuryTaken === 0 &&
+        ownSetScore < 95 &&
+        blockingScore < 75 &&
+        completionScore < 70 &&
+        tradeSize <= 3
+      ) {
+        score -= 90;
       }
 
-      // Se a mão está cheia, trocar é melhor do que pegar carta comum.
       if (bot.hand.length >= 6 && tradeSize >= 3) {
-        score += 40;
+        score += 55;
       }
 
-      // Se o jogador está com mão cheia, trocar pode controlar o mercado sem dar compra simples.
       if (opp.hand.length >= 6 && luxuryTaken > 0) {
-        score += 60;
+        score += 70;
+      }
+
+      // No fim, se ainda não tem luxo vendável, pode trocar para formar par de luxo.
+      if (urgentEndgame && !hasSellableLuxury && luxuryTaken > 0) {
+        score += 220;
       }
     }
   }
@@ -603,8 +784,8 @@ function evaluateMove(gameState, move, difficulty) {
   // PEGAR CAMELOS
   // ==========================================
   else if (move.type === "TAKE_CAMELS") {
-    const camelCount = gameState.market.filter((c) => c === "camel").length;
-    const luxuryInMarket = gameState.market.filter((c) => isLuxury(c));
+    const camelCount = countInArray(gameState.market, "camel");
+    const luxuryInMarket = gameState.market.filter((card) => isLuxury(card));
     const luxuryWithTokensInMarket = luxuryInMarket.filter(
       (type) => getTokenCount(gameState, type) > 0,
     );
@@ -614,69 +795,77 @@ function evaluateMove(gameState, move, difficulty) {
     if (difficulty === "Comerciante distraído") {
       if (bot.herd.length < 2) score += 6;
       if (camelCount >= 3) score -= 5;
-    } else if (difficulty === "Mercador Experiente") {
+    }
+
+    if (difficulty === "Mercador Experiente") {
       if (bot.herd.length === 0) score += 10;
       if (camelCount >= 3 && bot.herd.length >= 4) score -= 15;
-    } else if (difficulty === "Mestre do Souq") {
+    }
+
+    if (difficulty === "Mestre do Souq") {
       const revealedCards = getNextRevealedCards(gameState, camelCount);
       const revealedLuxury = revealedCards.filter((card) => isLuxury(card));
       const revealedUsefulToOpponent = revealedCards.filter(
         (card) => (oppHandCounts[card] || 0) >= 1,
       );
 
-      // NUNCA pegar camelos deixando luxo na mesa, se ele puder pegar/trocar.
+      // Se está no fim e já tem luxo vendável, vender é prioridade.
+      if (urgentEndgame && hasSellableLuxury) score -= 850;
+      if (endgame && hasSellableLuxury) score -= 1200;
+
+      // Nunca pegar camelo deixando luxo no mercado.
       if (luxuryWithTokensInMarket.length > 0) {
-        score -= 500;
+        score -= 650;
       }
 
-      // Pegar só 1 camelo raramente é bom.
       if (camelCount === 1) {
-        score -= 70;
+        score -= 80;
       }
 
-      // Pegar 2+ camelos é bom quando precisa de moeda para trocas grandes.
+      // Camelos são importantes para trocas de 4/5.
       if (camelCount >= 2 && bot.herd.length <= 2) {
-        score += 45;
+        score += 75;
       }
 
       if (camelCount >= 3) {
-        score += 55;
+        score += 90;
       }
 
       if (bot.herd.length === 0) {
-        score += 40;
+        score += 55;
       }
 
       if (bot.herd.length >= 5 && !endgame) {
-        score -= 35;
+        score -= 45;
       }
 
-      // Se o jogador está com mão cheia, ele não pode simplesmente pegar carta.
-      // Aí limpar camelos é muito menos perigoso.
+      // Se o jogador está sem espaço, pegar camelos é menos perigoso.
       if (opp.hand.length >= 7 && camelCount >= 2) {
-        score += 120;
+        score += 170;
       } else if (opp.hand.length >= 6 && camelCount >= 2) {
-        score += 70;
+        score += 95;
       }
 
-      // Se limpar camelos vai revelar luxo e o jogador tem espaço, é péssimo.
+      // Se limpar camelos revela luxo para o jogador, é péssimo.
       if (revealedLuxury.length > 0 && opp.hand.length < 7) {
-        score -= 160 * revealedLuxury.length;
+        score -= 220 * revealedLuxury.length;
       }
 
-      // Se revelar carta que o jogador coleciona, também é ruim.
+      // Se revela carta que o jogador junta, também é ruim.
       if (revealedUsefulToOpponent.length > 0 && opp.hand.length < 7) {
-        score -= 60 * revealedUsefulToOpponent.length;
+        revealedUsefulToOpponent.forEach((type) => {
+          const oppHas = oppHandCounts[type] || 0;
+          score -= isLuxury(type) ? 200 : getOpponentSetThreat(type, oppHas, 1);
+        });
       }
 
-      // Se o bot está atrás em camelos, pegar ajuda no bônus de 5.
+      // Bônus de maior rebanho.
       if (bot.herd.length + camelCount > opp.herd.length) {
-        score += 25;
+        score += 35;
       }
 
-      // No fim do jogo, camelos podem decidir a ficha de rebanho.
       if (endgame && bot.herd.length + camelCount > opp.herd.length) {
-        score += 70;
+        score += 95;
       }
     }
   }
@@ -693,6 +882,17 @@ function calculateBotAction(gameState, difficulty) {
 
   if (moves.length === 0) return null;
 
+  // REGRA DE OURO DO MESTRE:
+  // Se o fim está próximo e o bot tem diamante/ouro/prata vendável,
+  // ele vende imediatamente. Isso evita perder segurando luxo.
+  if (difficulty === "Mestre do Souq" && isUrgentEndgame(gameState)) {
+    const luxurySale = getBestImmediateLuxurySale(gameState);
+
+    if (luxurySale) {
+      return luxurySale;
+    }
+  }
+
   let bestMove = moves[0];
   let bestScore = -999999;
 
@@ -704,7 +904,6 @@ function calculateBotAction(gameState, difficulty) {
     } else if (difficulty === "Mercador Experiente") {
       score += Math.random() * 0.1;
     } else {
-      // Mestre do Souq: praticamente determinístico.
       score += Math.random() * 0.001;
     }
 
