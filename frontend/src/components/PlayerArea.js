@@ -1,7 +1,7 @@
-import React from "react";
+import React, { useRef, useState } from "react";
 import Card from "./Card";
 import { FaAward, FaTimes } from "react-icons/fa";
-import { AnimatePresence } from "framer-motion";
+import { AnimatePresence, motion } from "framer-motion";
 
 export default function PlayerArea({
   isOpponent,
@@ -17,6 +17,9 @@ export default function PlayerArea({
   isMyTurn = false,
   className = "",
 }) {
+  const [showOpponentCardToast, setShowOpponentCardToast] = useState(false);
+  const opponentToastTimer = useRef(null);
+
   const visibleSum = tokens.reduce(
     (sum, t) => (t.type === "good" ? sum + t.value : sum),
     0,
@@ -51,22 +54,36 @@ export default function PlayerArea({
       ? "gap-1 sm:gap-2 md:gap-2.5"
       : "gap-1.5 sm:gap-3 md:gap-4";
 
+  const handleOpponentCardClick = () => {
+    setShowOpponentCardToast(true);
+
+    if (opponentToastTimer.current) {
+      clearTimeout(opponentToastTimer.current);
+    }
+
+    opponentToastTimer.current = setTimeout(() => {
+      setShowOpponentCardToast(false);
+    }, 3000);
+  };
+
   const renderHand = () => {
     if (isOpponent) {
       return Array.from({ length: hand }).map((_, i) => (
-        <div
+        <button
+          type="button"
           key={`opp-card-${i}`}
-          className="flex-shrink-0 transition-all duration-300"
+          onClick={handleOpponentCardClick}
+          className="flex-shrink-0 transition-all duration-300 py-1 focus:outline-none hover:scale-105"
         >
           <Card type="back" hidden={true} sizeClassName={handCardSize} />
-        </div>
+        </button>
       ));
     }
 
     return hand.map((cardType, index) => (
       <div
         key={`my-card-${index}`}
-        className="flex-shrink-0 transition-all duration-300"
+        className="flex-shrink-0 transition-all duration-300 py-1"
       >
         <Card
           type={cardType}
@@ -86,8 +103,21 @@ export default function PlayerArea({
 
   return (
     <div
-      className={`p-2 shadow-sm border-2 transition-colors flex flex-col min-w-0 ${areaStyle} ${className}`}
+      className={`relative p-2 shadow-sm border-2 transition-colors flex flex-col min-w-0 ${areaStyle} ${className}`}
     >
+      <AnimatePresence>
+        {showOpponentCardToast && (
+          <motion.div
+            initial={{ opacity: 0, y: -8, scale: 0.96 }}
+            animate={{ opacity: 1, y: 0, scale: 1 }}
+            exit={{ opacity: 0, y: -8, scale: 0.96 }}
+            className="absolute top-12 left-1/2 -translate-x-1/2 z-50 bg-gray-900 text-white text-xs md:text-sm font-bold px-4 py-2 rounded-full shadow-xl whitespace-nowrap"
+          >
+            Você não pode ver a carta do seu oponente, rs.
+          </motion.div>
+        )}
+      </AnimatePresence>
+
       <div className="flex justify-between items-center mb-2 px-2 flex-shrink-0 flex-wrap gap-2 border-b border-gray-200 dark:border-gray-700 pb-1.5">
         <div className="flex items-center flex-wrap gap-1.5 md:gap-2">
           <h2

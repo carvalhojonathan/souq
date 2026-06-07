@@ -98,7 +98,7 @@ export default function Card({
         ${cardSizeClass}
         ${
           isSelected
-            ? "ring-4 ring-jaipur-red shadow-xl -translate-y-2"
+            ? "ring-4 ring-inset ring-jaipur-red shadow-xl"
             : "shadow-md"
         }
         ${imgError ? fallbackStyle : "border-transparent"}

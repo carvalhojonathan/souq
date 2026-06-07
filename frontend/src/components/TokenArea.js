@@ -113,18 +113,18 @@ export default function TokenArea({ tokens }) {
 
   return (
     <div className="bg-white dark:bg-gray-800 p-3 md:p-4 rounded-xl shadow-sm border border-jaipur-gold dark:border-gray-700 h-full max-h-full overflow-y-auto custom-scrollbar transition-colors">
-      <div className="flex flex-col md:flex-col gap-0.5">
+      <div className="flex flex-col gap-0.5">
         <div className="grid grid-cols-2 md:grid-cols-1 gap-x-4 gap-y-0.5">
-          <div className="flex flex-col order-1 md:order-2">
-            {renderGroup("cloth", "Tecido")}
-            {renderGroup("spice", "Especiaria")}
-            {renderGroup("leather", "Couro")}
-          </div>
-
-          <div className="flex flex-col order-2 md:order-1">
+          <div className="flex flex-col order-1">
             {renderGroup("diamond", "Diamante")}
             {renderGroup("gold", "Ouro")}
             {renderGroup("silver", "Prata")}
+          </div>
+
+          <div className="flex flex-col order-2">
+            {renderGroup("cloth", "Tecido")}
+            {renderGroup("spice", "Especiaria")}
+            {renderGroup("leather", "Couro")}
           </div>
         </div>
 

@@ -34,8 +34,10 @@ export default function ActionPanel({
   const selectedMarketCamels = selectedMarket.filter(
     (c) => c === "camel",
   ).length;
+
   const expectedHandSizeAfterTrade =
     myPlayer.hand.length + selectedMarket.length - selectedHand.length;
+
   const hasCommon = selectedHand.some((card) => selectedMarket.includes(card));
 
   const canTakeOne =
@@ -64,6 +66,12 @@ export default function ActionPanel({
     (!["diamond", "gold", "silver"].includes(selectedHand[0]) ||
       selectedHand.length >= 2);
 
+  const actionButtonClass =
+    "flex flex-col items-center justify-center py-2 px-1 md:px-2 gap-1 rounded border-2 transition-all shadow-sm";
+
+  const actionTextClass = "text-[10px] md:text-xs font-bold leading-tight";
+  const actionIconClass = "text-base md:text-xl flex-shrink-0";
+
   return (
     <div className="bg-white dark:bg-gray-800 p-2.5 md:p-3 rounded-xl shadow-sm border border-jaipur-gold dark:border-gray-700 flex items-stretch h-full min-h-[76px] md:min-h-[86px] gap-2.5 transition-colors">
       {isReviewingBoard ? (
@@ -71,16 +79,18 @@ export default function ActionPanel({
           {matchWinner ? (
             <button
               onClick={onLeaveMatch}
-              className="w-full h-full bg-jaipur-gold hover:bg-yellow-600 text-white font-bold rounded shadow-md flex items-center justify-center gap-2 transition-all uppercase text-sm md:text-lg"
+              className="w-full h-full bg-jaipur-gold hover:bg-yellow-600 text-white font-bold rounded shadow-md flex flex-col items-center justify-center gap-1 transition-all uppercase text-sm md:text-lg"
             >
-              <FaHome /> Tela Inicial
+              <FaHome />
+              Tela Inicial
             </button>
           ) : (
             <button
               onClick={onContinueRound}
-              className="w-full h-full bg-jaipur-green hover:bg-green-700 text-white font-bold rounded shadow-md flex items-center justify-center gap-2 transition-all uppercase text-sm md:text-lg"
+              className="w-full h-full bg-jaipur-green hover:bg-green-700 text-white font-bold rounded shadow-md flex flex-col items-center justify-center gap-1 transition-all uppercase text-sm md:text-lg"
             >
-              Continuar Partida <FaArrowRight />
+              <FaArrowRight />
+              Continuar Partida
             </button>
           )}
         </div>
@@ -116,31 +126,27 @@ export default function ActionPanel({
                 })
               }
               disabled={!isMyTurn || !canTakeOne}
-              className={`flex flex-row items-center justify-center py-2 px-1 md:px-2 gap-1.5 md:gap-2 rounded border-2 transition-all shadow-sm ${
+              className={`${actionButtonClass} ${
                 isMyTurn && canTakeOne
                   ? "border-blue-500 bg-blue-50 dark:bg-blue-900/30 dark:border-blue-400 text-blue-700 dark:text-blue-300 hover:bg-blue-100 dark:hover:bg-blue-900/50"
                   : "border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-800 text-gray-400 dark:text-gray-500 opacity-50"
               }`}
             >
-              <span className="text-[10px] md:text-xs font-bold leading-tight">
-                Comprar
-              </span>
-              <FaHandPaper className="text-sm md:text-lg flex-shrink-0" />
+              <FaHandPaper className={actionIconClass} />
+              <span className={actionTextClass}>Comprar</span>
             </button>
 
             <button
               onClick={() => handleAction("TAKE_CAMELS", {})}
               disabled={!isMyTurn || !canTakeCamels}
-              className={`flex flex-row items-center justify-center py-2 px-1 md:px-2 gap-1.5 md:gap-2 rounded border-2 transition-all shadow-sm ${
+              className={`${actionButtonClass} ${
                 isMyTurn && canTakeCamels
                   ? "border-yellow-500 bg-yellow-50 dark:bg-yellow-900/30 dark:border-yellow-500 text-yellow-700 dark:text-yellow-400 hover:bg-yellow-100 dark:hover:bg-yellow-900/50"
                   : "border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-800 text-gray-400 dark:text-gray-500 opacity-50"
               }`}
             >
-              <span className="text-[10px] md:text-xs font-bold leading-tight">
-                Camelos
-              </span>
-              <FaStore className="text-sm md:text-lg flex-shrink-0" />
+              <FaStore className={actionIconClass} />
+              <span className={actionTextClass}>Camelos</span>
             </button>
 
             <button
@@ -152,16 +158,14 @@ export default function ActionPanel({
                 })
               }
               disabled={!isMyTurn || !canTrade}
-              className={`flex flex-row items-center justify-center py-2 px-1 md:px-2 gap-1.5 md:gap-2 rounded border-2 transition-all shadow-sm ${
+              className={`${actionButtonClass} ${
                 isMyTurn && canTrade
                   ? "border-purple-500 bg-purple-50 dark:bg-purple-900/30 dark:border-purple-400 text-purple-700 dark:text-purple-300 hover:bg-purple-100 dark:hover:bg-purple-900/50"
                   : "border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-800 text-gray-400 dark:text-gray-500 opacity-50"
               }`}
             >
-              <span className="text-[10px] md:text-xs font-bold leading-tight">
-                Trocar
-              </span>
-              <FaExchangeAlt className="text-sm md:text-lg flex-shrink-0" />
+              <FaExchangeAlt className={actionIconClass} />
+              <span className={actionTextClass}>Trocar</span>
             </button>
 
             <button
@@ -169,16 +173,14 @@ export default function ActionPanel({
                 handleAction("SELL_GOODS", { handIndices: selectedHandIndices })
               }
               disabled={!isMyTurn || !canSell}
-              className={`flex flex-row items-center justify-center py-2 px-1 md:px-2 gap-1.5 md:gap-2 rounded border-2 transition-all shadow-sm ${
+              className={`${actionButtonClass} ${
                 isMyTurn && canSell
                   ? "border-jaipur-green bg-green-50 dark:bg-green-900/30 dark:border-green-500 text-jaipur-green dark:text-green-400 hover:bg-green-100 dark:hover:bg-green-900/50"
                   : "border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-800 text-gray-400 dark:text-gray-500 opacity-50"
               }`}
             >
-              <span className="text-[10px] md:text-xs font-bold leading-tight">
-                Vender
-              </span>
-              <FaCoins className="text-sm md:text-lg flex-shrink-0" />
+              <FaCoins className={actionIconClass} />
+              <span className={actionTextClass}>Vender</span>
             </button>
           </div>
         </>
