@@ -1,6 +1,7 @@
 import React, { useState } from "react";
 
-const TokenBadge = ({ value, type, isHidden = false }) => {
+// Adicionada propriedade isCompact
+const TokenBadge = ({ value, type, isHidden = false, isCompact = false }) => {
   const [imgError, setImgError] = useState(false);
 
   const nameMap = {
@@ -17,25 +18,35 @@ const TokenBadge = ({ value, type, isHidden = false }) => {
   };
   const imgSrc = nameMap[type] ? `/images/tokens/${nameMap[type]}.png` : null;
 
+  // Se for compacto (Couro), fica ligeiramente menor para caber na linha
+  const sizeClasses = isCompact
+    ? "w-6 h-6 md:w-8 md:h-8"
+    : "w-8 h-8 md:w-10 md:h-10";
+  const textSize = isCompact ? "text-[10px] md:text-xs" : "text-xs md:text-sm";
+  const badgeTextSize = isCompact
+    ? "text-[9px] md:text-[10px]"
+    : "text-[10px] md:text-xs";
+
   return (
-    // Removidas as sombras e adicionada uma borda branca (ou da cor de fundo no dark mode)
-    <div className="relative inline-flex flex-col items-center bg-white dark:bg-gray-700 rounded-full border-2 border-white dark:border-gray-800 transition-all hover:-translate-y-1 hover:z-20 z-10">
+    <div className="relative inline-flex flex-col items-center bg-white dark:bg-gray-700 rounded-full border border-white dark:border-gray-800 transition-all hover:-translate-y-1 hover:z-20 z-10">
       {imgSrc && !imgError ? (
-        // Removido o drop-shadow da imagem
         <img
           src={imgSrc}
           alt={type}
           onError={() => setImgError(true)}
-          className="w-8 h-8 md:w-10 md:h-10 object-contain p-0.5"
+          className={`${sizeClasses} object-contain p-0.5`}
         />
       ) : (
-        <div className="w-8 h-8 md:w-10 md:h-10 rounded-full bg-gray-300 dark:bg-gray-600 flex items-center justify-center text-xs md:text-sm font-bold">
+        <div
+          className={`${sizeClasses} rounded-full bg-gray-300 dark:bg-gray-600 flex items-center justify-center ${textSize} font-bold`}
+        >
           {isHidden ? "?" : value}
         </div>
       )}
       {value !== undefined && !isHidden && (
-        // Caixa de valor simples, sem sombras, apenas com uma borda fina e cinza muito clara
-        <span className="absolute -bottom-2 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-600 px-1.5 rounded text-[10px] md:text-xs font-bold leading-none text-gray-800 dark:text-gray-200 z-20">
+        <span
+          className={`absolute -bottom-2 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-600 px-1.5 py-0.5 rounded ${badgeTextSize} font-bold leading-none text-gray-800 dark:text-gray-200 z-20`}
+        >
           {value}
         </span>
       )}
@@ -58,15 +69,23 @@ export default function TokenArea({ tokens }) {
         : 0;
     const isHidden = type.includes("bonus");
 
+    // MODO COMPACTO: Se houver mais de 6 fichas (Couro), ativa tamanho menor e força a não quebrar linha
+    const isCompact = count > 6;
+
     return (
       <div className="mb-4">
-        <h4 className="text-[10px] md:text-xs font-bold text-gray-500 dark:text-gray-400 uppercase tracking-widest mb-1">
+        {/* MARGEM REMOVIDA (mb-0) PARA COLAR AO TÍTULO */}
+        <h4 className="text-[10px] md:text-xs font-bold text-gray-500 dark:text-gray-400 uppercase tracking-widest mb-0">
           {title}
         </h4>
+
         {count === 0 ? (
           <span className="text-xs italic text-gray-400 pl-1">Esgotado</span>
         ) : (
-          <div className="flex flex-row flex-wrap -space-x-3 md:-space-x-4 pl-1 pt-1 pb-2">
+          // flex-nowrap garante que nunca quebram linha
+          <div
+            className={`flex flex-row ${isCompact ? "flex-nowrap" : "flex-wrap"} -space-x-3 md:-space-x-4 pl-1 pt-1 pb-2`}
+          >
             {isArray
               ? group.map((t, i) => (
                   <TokenBadge
@@ -74,6 +93,7 @@ export default function TokenArea({ tokens }) {
                     value={t.value}
                     type={type}
                     isHidden={isHidden}
+                    isCompact={isCompact}
                   />
                 ))
               : Array.from({ length: count }).map((_, i) => (
@@ -82,6 +102,7 @@ export default function TokenArea({ tokens }) {
                     value={isHidden ? "?" : 5}
                     type={type}
                     isHidden={isHidden}
+                    isCompact={isCompact}
                   />
                 ))}
           </div>

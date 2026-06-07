@@ -19,12 +19,10 @@ export default function MarketArea({
       </h2>
 
       <div className="flex flex-row items-center justify-between min-h-[7rem] md:min-h-[8rem] p-2 bg-white dark:bg-gray-900 rounded border border-gray-300 dark:border-gray-700 w-full transition-colors relative overflow-x-auto overflow-y-hidden custom-scrollbar">
-        {/* BARALHO (DECK) COM TAMANHO MÁXIMO FIXADO */}
         <div className="flex flex-col items-center flex-shrink-0 w-[50px] max-w-[50px] sm:w-[70px] sm:max-w-[70px] md:w-[85px] md:max-w-[85px] ml-2 sm:ml-4">
           <Card type="deck" count={deckCount} />
         </div>
 
-        {/* CARTAS DO MERCADO COM TAMANHO MÁXIMO FIXADO */}
         <div className="flex flex-row items-center justify-center gap-1 sm:gap-2 flex-grow min-w-0 px-1 sm:px-2 border-l border-r border-dashed border-gray-300 dark:border-gray-700 mx-2 sm:mx-4">
           {marketCards.map((cardType, index) => (
             <div
@@ -42,8 +40,8 @@ export default function MarketArea({
           ))}
         </div>
 
-        {/* PILHA DE DESCARTE (Oculta em telemóveis) */}
-        <div className="hidden sm:flex flex-col items-center flex-shrink-0 w-[50px] max-w-[50px] sm:w-[70px] sm:max-w-[70px] md:w-[85px] md:max-w-[85px] mr-2">
+        {/* PILHA DE DESCARTE COM BLUR (Desfocada para não atrapalhar) */}
+        <div className="hidden sm:flex flex-col items-center flex-shrink-0 w-[50px] max-w-[50px] sm:w-[70px] sm:max-w-[70px] md:w-[85px] md:max-w-[85px] mr-2 opacity-75 blur-[2px] hover:blur-none hover:opacity-100 transition-all duration-300 cursor-default">
           {discardPile && discardPile.length > 0 ? (
             <Card type={discardPile[discardPile.length - 1]} />
           ) : (

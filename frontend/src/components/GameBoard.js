@@ -167,11 +167,14 @@ export default function GameBoard({
             tokens={opponent.tokens}
             className="shadow-sm rounded-xl dark:bg-gray-800 dark:border-gray-700"
           />
+        </div>
 
-          {/* Histórico com altura aumentada (max-h-48) e scroll caso necessário */}
-          <div className="mt-1 md:mt-2 max-h-48 md:max-h-60 overflow-y-auto custom-scrollbar bg-white dark:bg-gray-900 rounded-xl shadow-sm border-2 border-jaipur-green dark:border-green-700/50 transition-colors">
-            <ActionLog logs={gameState.logs} />
-          </div>
+        {/* Agora o Histórico tem a sua própria área (gridArea: "log")! */}
+        <div
+          style={{ gridArea: "log" }}
+          className="max-h-48 md:max-h-60 overflow-y-auto custom-scrollbar bg-white dark:bg-gray-900 rounded-xl shadow-sm border-2 border-jaipur-green dark:border-green-700/50 transition-colors"
+        >
+          <ActionLog logs={gameState.logs} />
         </div>
       </div>
     </>
