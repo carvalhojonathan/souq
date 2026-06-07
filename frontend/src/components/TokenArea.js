@@ -1,29 +1,131 @@
-import React from "react";
-import TokenPile from "./TokenPile";
+import React, { useState } from "react";
+
+// Componente para renderizar uma única ficha com a imagem
+const TokenBadge = ({ value, type, isHidden = false }) => {
+  const [imgError, setImgError] = useState(false);
+
+  // Mapa de imagens baseado no sistema do ScoreBoard
+  const nameMap = {
+    diamond: "diamante",
+    gold: "ouro",
+    silver: "prata",
+    cloth: "tecido",
+    spice: "especiarias",
+    leather: "couro",
+    bonus3: "bonus",
+    bonus4: "bonus",
+    bonus5: "bonus",
+    camelToken: "rebanho",
+  };
+  const imgSrc = nameMap[type] ? `/images/tokens/${nameMap[type]}.png` : null;
+
+  return (
+    <div className="flex flex-col items-center bg-white dark:bg-gray-700 rounded-full p-0.5 shadow-sm transition-colors">
+      {imgSrc && !imgError ? (
+        <img
+          src={imgSrc}
+          alt={type}
+          onError={() => setImgError(true)}
+          className="w-6 h-6 md:w-8 md:h-8 object-contain drop-shadow-sm"
+        />
+      ) : (
+        <div className="w-6 h-6 md:w-8 md:h-8 rounded-full bg-gray-300 dark:bg-gray-600 border border-gray-400 flex items-center justify-center text-[10px] md:text-xs font-bold">
+          {isHidden ? "?" : value}
+        </div>
+      )}
+      {value !== undefined && !isHidden && (
+        <span className="text-[9px] md:text-[11px] font-bold mt-[2px] leading-none text-gray-700 dark:text-gray-200">
+          {value}
+        </span>
+      )}
+    </div>
+  );
+};
 
 export default function TokenArea({ tokens }) {
   if (!tokens) return null;
 
-  return (
-    <div className="bg-white dark:bg-gray-800 p-2 md:p-3 rounded-lg shadow-sm border border-jaipur-gold dark:border-gray-700 flex flex-col justify-start h-full transition-colors">
-      {/* Grupos de Fichas rigorosamente UM EMBAIXO DO OUTRO */}
-      <div className="flex flex-col gap-y-1">
-        <TokenPile type="diamond" label="Diamante" data={tokens.diamond} />
-        <TokenPile type="gold" label="Ouro" data={tokens.gold} />
-        <TokenPile type="silver" label="Prata" data={tokens.silver} />
-        <TokenPile type="cloth" label="Tecido" data={tokens.cloth} />
-        <TokenPile type="spice" label="Especiaria" data={tokens.spice} />
-        <TokenPile type="leather" label="Couro" data={tokens.leather} />
+  // Função auxiliar para renderizar cada grupo de fichas
+  const renderGroup = (type, title) => {
+    const group = tokens[type];
+    if (!group) return null;
+
+    const isArray = Array.isArray(group);
+    const count = isArray ? group.length : group > 0 ? 1 : 0;
+    const isHidden = type.includes("bonus");
+
+    return (
+      <div className="mb-2 md:mb-3">
+        <h4 className="text-[10px] md:text-xs font-bold text-gray-500 dark:text-gray-400 uppercase tracking-widest mb-1.5">
+          {title}
+        </h4>
+        {count === 0 ? (
+          <span className="text-xs italic text-gray-400">Esgotado</span>
+        ) : (
+          <div className="flex flex-wrap gap-1 md:gap-1.5">
+            {isArray ? (
+              group.map((t, i) => (
+                <TokenBadge
+                  key={i}
+                  value={t.value}
+                  type={type}
+                  isHidden={isHidden}
+                />
+              ))
+            ) : (
+              <TokenBadge value={5} type={type} />
+            )}
+          </div>
+        )}
       </div>
+    );
+  };
 
-      <hr className="border-t border-gray-300 dark:border-gray-600 my-2 w-full transition-colors" />
+  return (
+    <div className="bg-white dark:bg-gray-800 p-3 md:p-4 rounded-xl shadow-sm border border-jaipur-gold dark:border-gray-700 h-full max-h-full overflow-y-auto custom-scrollbar transition-colors">
+      <h3 className="text-xs font-bold text-gray-600 dark:text-gray-300 uppercase tracking-widest border-b border-gray-300 dark:border-gray-600 pb-2 mb-3">
+        💰 Fichas do Mercado
+      </h3>
 
-      {/* Bónus também UM EMBAIXO DO OUTRO */}
-      <div className="flex flex-col gap-y-1">
-        <TokenPile type="bonus5" label="5 Cartas" data={tokens.bonus5} />
-        <TokenPile type="bonus4" label="4 Cartas" data={tokens.bonus4} />
-        <TokenPile type="bonus3" label="3 Cartas" data={tokens.bonus3} />
-        <TokenPile type="camel" label="Mais camelos" data={tokens.camel} />
+      <div className="flex flex-col md:flex-col gap-2">
+        {/* ======================================= */}
+        {/* PARTE 1: MERCADORIAS                      */}
+        {/* Telemóvel: 2 Colunas / Computador: 1 Coluna */}
+        {/* ======================================= */}
+        <div className="grid grid-cols-2 md:grid-cols-1 gap-x-4 gap-y-2">
+          {/* ESQUERDA MOBILE (Ordem 2 no PC para ficar na parte de baixo) */}
+          <div className="flex flex-col order-1 md:order-2">
+            {renderGroup("cloth", "Tecido")}
+            {renderGroup("spice", "Especiaria")}
+            {renderGroup("leather", "Couro")}
+          </div>
+
+          {/* DIREITA MOBILE (Ordem 1 no PC para ficar no topo) */}
+          <div className="flex flex-col order-2 md:order-1">
+            {renderGroup("diamond", "Diamante")}
+            {renderGroup("gold", "Ouro")}
+            {renderGroup("silver", "Prata")}
+          </div>
+        </div>
+
+        <hr className="border-gray-200 dark:border-gray-700 my-2" />
+
+        {/* ======================================= */}
+        {/* PARTE 2: BÓNUS E REBANHO                  */}
+        {/* ======================================= */}
+        <div className="grid grid-cols-2 md:grid-cols-1 gap-x-4 gap-y-2">
+          {/* ESQUERDA MOBILE (Ordem 2 no PC para ficar na parte de baixo) */}
+          <div className="flex flex-col order-1 md:order-2">
+            {renderGroup("bonus3", "3 Cartas")}
+            {renderGroup("camelToken", "Maior Rebanho")}
+          </div>
+
+          {/* DIREITA MOBILE (Ordem 1 no PC para ficar no topo) */}
+          <div className="flex flex-col order-2 md:order-1">
+            {renderGroup("bonus5", "5 Cartas")}
+            {renderGroup("bonus4", "4 Cartas")}
+          </div>
+        </div>
       </div>
     </div>
   );

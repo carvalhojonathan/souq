@@ -6,24 +6,31 @@ html,
 body,
 #root {
   min-height: 100vh;
-  /* Aplica a cor areia no modo claro e cinza escuro no modo escuro suavemente */
+  width: 100%;
+  overflow-x: hidden;
   @apply bg-[#ebd5b3] dark:bg-gray-900 transition-colors duration-300 text-gray-800 dark:text-gray-100;
 }
 
+/* PAISAGEM (Computador e Tablet Horizontal) */
 .game-board-container {
   max-width: 1200px;
+  width: 100%;
   margin: 0 auto;
   display: grid;
   grid-template-columns: 1fr 3fr;
-  gap: 10px;
+  gap: 12px;
   grid-template-areas:
     "header header"
     "actions actions"
     "tokens board"
-    "scoreboard log";
+    "tokens log"; /* O histórico fica logo abaixo da mesa, na direita */
 }
 
-/* Responsividade para Ecrãs Menores (Tablets e Telemóveis) */
+.game-board-container > div {
+  min-width: 0;
+}
+
+/* RETRATO (Telemóveis e Tablet Vertical) */
 @media (max-width: 768px) {
   .game-board-container {
     grid-template-columns: 1fr;
@@ -32,7 +39,6 @@ body,
       "actions"
       "board"
       "tokens"
-      "scoreboard"
       "log";
   }
 }

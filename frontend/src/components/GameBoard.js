@@ -1,11 +1,10 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import GameHeader from "./GameHeader";
 import PlayerArea from "./PlayerArea";
 import MarketArea from "./MarketArea";
 import TokenArea from "./TokenArea";
 import ActionPanel from "./ActionPanel";
 import ActionLog from "./ActionLog";
-import ScoreBoard from "./ScoreBoard";
 import RoundEndModal from "./RoundEndModal";
 import HelpModal from "./HelpModal";
 
@@ -15,13 +14,21 @@ export default function GameBoard({
   roomId,
   opponentConnected,
   onLeaveRoom,
-  isDarkMode, // Recebe do App.js
-  toggleTheme, // Recebe do App.js
+  isDarkMode,
+  toggleTheme,
 }) {
   const [showHelp, setShowHelp] = useState(false);
   const [selectedHandCards, setSelectedHandCards] = useState([]);
   const [selectedMarketCards, setSelectedMarketCards] = useState([]);
   const [selectedHerdCount, setSelectedHerdCount] = useState(0);
+
+  const [isReviewingBoard, setIsReviewingBoard] = useState(false);
+
+  useEffect(() => {
+    if (!gameState.roundEndStats) {
+      setIsReviewingBoard(false);
+    }
+  }, [gameState.roundEndStats]);
 
   const myId = socket.id;
   const opponentId = Object.keys(gameState.players).find((id) => id !== myId);
@@ -46,7 +53,6 @@ export default function GameBoard({
     );
 
   const toggleMarketSelection = (index) => {
-    // ... (mantém a sua lógica intacta)
     const clickedCard = gameState.market[index];
     if (clickedCard === "camel") {
       const camelIndices = gameState.market.reduce((acc, card, i) => {
@@ -72,19 +78,28 @@ export default function GameBoard({
     }
   };
 
-  const handleNextRound = () => socket.emit("requestNextRound", roomId);
+  const handleNextRound = () => {
+    setIsReviewingBoard(false);
+    socket.emit("requestNextRound", roomId);
+  };
+
+  const handleLeaveMatch = () => {
+    socket.emit("leaveRoom", roomId);
+    onLeaveRoom();
+  };
 
   return (
     <>
       {showHelp && <HelpModal onClose={() => setShowHelp(false)} />}
 
-      {gameState.roundEndStats && (
+      {gameState.roundEndStats && !isReviewingBoard && (
         <RoundEndModal
           stats={gameState.roundEndStats}
           myId={myId}
           players={gameState.players}
           onNextRound={handleNextRound}
-          onLeaveRoom={onLeaveRoom}
+          onLeaveMatch={handleLeaveMatch}
+          onReviewBoard={() => setIsReviewingBoard(true)}
         />
       )}
 
@@ -92,7 +107,7 @@ export default function GameBoard({
         <div style={{ gridArea: "header" }}>
           <GameHeader
             opponentConnected={opponentConnected}
-            opponentName={opponent.name} // AQUI ESTÁ A MODIFICAÇÃO!
+            opponentName={opponent.name}
             onOpenHelp={() => setShowHelp(true)}
             onLeaveRoom={onLeaveRoom}
             isDarkMode={isDarkMode}
@@ -119,6 +134,10 @@ export default function GameBoard({
               setSelectedMarketCards([]);
               setSelectedHerdCount(0);
             }}
+            isReviewingBoard={isReviewingBoard}
+            matchWinner={gameState.roundEndStats?.matchWinnerId}
+            onContinueRound={handleNextRound}
+            onLeaveMatch={handleLeaveMatch}
           />
         </div>
 
@@ -126,6 +145,7 @@ export default function GameBoard({
           <TokenArea tokens={gameState.tokens} />
         </div>
 
+        {/* MESA PRINCIPAL (A Mão do Jogador primeiro, depois Mercado, depois Oponente) */}
         <div
           style={{ gridArea: "board" }}
           className="flex flex-col gap-3 md:gap-4"
@@ -137,6 +157,7 @@ export default function GameBoard({
             hand={myPlayer.hand}
             herdCount={myPlayer.herd.length}
             seals={myPlayer.seals}
+            tokens={myPlayer.tokens}
             selectedHandCards={selectedHandCards}
             onSelectCard={toggleHandSelection}
             selectedHerdCount={selectedHerdCount}
@@ -160,15 +181,16 @@ export default function GameBoard({
             hand={opponent.handCount}
             herdCount={opponent.herd.length}
             seals={opponent.seals}
+            tokens={opponent.tokens}
             className="shadow-sm rounded-xl dark:bg-gray-800 dark:border-gray-700"
           />
         </div>
 
-        <div style={{ gridArea: "scoreboard" }}>
-          <ScoreBoard myPlayer={myPlayer} opponent={opponent} />
-        </div>
-
-        <div style={{ gridArea: "log" }}>
+        {/* HISTÓRICO SEPARADO */}
+        <div
+          style={{ gridArea: "log" }}
+          className="max-h-32 md:max-h-48 overflow-hidden shadow-sm rounded-xl dark:bg-gray-800 dark:border-gray-700 bg-white border border-gray-200"
+        >
           <ActionLog logs={gameState.logs} />
         </div>
       </div>

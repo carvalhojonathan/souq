@@ -4,22 +4,20 @@
 // FUNÇÕES AUXILIARES DE LEITURA DA MESA
 // ==========================================
 
-// O Bot olha para a pilha e vê exatamente qual é o valor da ficha que está no topo!
 function getTopTokenValue(gameState, type) {
   if (!gameState.tokens[type] || gameState.tokens[type].length === 0) return 0;
   return gameState.tokens[type][0].value;
 }
 
-// O Bot calcula a média esperada se ganhar uma ficha oculta de bónus
 function getExpectedBonus(count) {
-  if (count === 3) return 2.5; // Média das fichas 1,2,3
-  if (count === 4) return 5; // Média das fichas 4,5,6
-  if (count >= 5) return 9; // Média das fichas 8,9,10
+  if (count === 3) return 2.5;
+  if (count === 4) return 5;
+  if (count >= 5) return 9;
   return 0;
 }
 
 // ==========================================
-// 1. GERADOR DE JOGADAS INTELIGENTES
+// 1. GERADOR DE JOGADAS
 // ==========================================
 function getValidMoves(gameState, botId) {
   const bot = gameState.players[botId];
@@ -54,8 +52,7 @@ function getValidMoves(gameState, botId) {
     });
   }
 
-  // 4. TROCAR CARTAS (Mestre das Trocas: Dar o Lixo para levar o Ouro)
-  // O bot analisa o mercado do MAIS VALIOSO para o MENOS VALIOSO
+  // 4. TROCAR CARTAS
   const marketCards = gameState.market
     .map((type, index) => ({
       type,
@@ -65,7 +62,6 @@ function getValidMoves(gameState, botId) {
     .filter((c) => c.type !== "camel")
     .sort((a, b) => b.val - a.val);
 
-  // O bot analisa a sua mão do LIXO (menos valioso) para o MELHOR
   const handCards = bot.hand
     .map((type, index) => ({
       type,
@@ -77,7 +73,6 @@ function getValidMoves(gameState, botId) {
   const herdCount = bot.herd.length;
   const maxTrade = Math.min(marketCards.length, handCards.length + herdCount);
 
-  // Gera possibilidades de trocar 2 a 5 mercadorias
   if (maxTrade >= 2) {
     for (let k = 2; k <= maxTrade; k++) {
       const takeIndices = marketCards.slice(0, k).map((c) => c.index);
@@ -87,12 +82,10 @@ function getValidMoves(gameState, botId) {
       let camelsToGive = 0;
       let itemsGathered = 0;
 
-      // Impede o bot de entregar um tipo de mercadoria que ele está a tentar receber
       const validHandCards = handCards.filter(
         (c) => !takeTypes.includes(c.type),
       );
 
-      // 1º Tenta dar as piores cartas da mão
       for (const hc of validHandCards) {
         if (itemsGathered < k) {
           giveHandIndices.push(hc.index);
@@ -100,15 +93,12 @@ function getValidMoves(gameState, botId) {
         }
       }
 
-      // 2º Se faltar para a troca, completa com camelos do rebanho
       while (itemsGathered < k && camelsToGive < herdCount) {
         camelsToGive++;
         itemsGathered++;
       }
 
-      // A troca só é válida se tiver os K itens e a mão final não estourar 7 cartas
       const newHandSize = bot.hand.length - giveHandIndices.length + k;
-
       if (itemsGathered === k && newHandSize <= 7) {
         moves.push({
           type: "TAKE_SEVERAL",
@@ -130,6 +120,22 @@ function getValidMoves(gameState, botId) {
 // ==========================================
 function evaluateMove(gameState, move, difficulty) {
   const bot = gameState.players["CPU"];
+  const oppId = Object.keys(gameState.players).find((id) => id !== "CPU");
+  const opp = gameState.players[oppId];
+
+  // O Mestre do Souq tem Noção de Tempo: Se o jogo está perto do fim, ele muda de tática!
+  const emptyTokenStacks = [
+    "diamond",
+    "gold",
+    "silver",
+    "cloth",
+    "spice",
+    "leather",
+  ].filter(
+    (t) => !gameState.tokens[t] || gameState.tokens[t].length === 0,
+  ).length;
+  const isEndgame = emptyTokenStacks >= 2 || gameState.deck.length <= 6;
+
   let score = 0;
 
   if (move.type === "SELL_GOODS") {
@@ -137,7 +143,6 @@ function evaluateMove(gameState, move, difficulty) {
     const goodType = bot.hand[move.payload.handIndices[0]];
     const isLuxury = ["diamond", "gold", "silver"].includes(goodType);
 
-    // Soma os exatos pontos reais que vai tirar da mesa + estimativa do bónus
     let points = 0;
     const tokens = gameState.tokens[goodType] || [];
     for (let i = 0; i < count && i < tokens.length; i++)
@@ -146,26 +151,44 @@ function evaluateMove(gameState, move, difficulty) {
 
     score = points;
 
-    // FÁCIL (Aplicada a Lógica do Antigo Normal)
     if (difficulty === "Comerciante distraído") {
-      if (count >= 3) score += 5;
-      if (isLuxury) score += 6;
-    }
-    // NORMAL (Aplicada a Lógica do Antigo Difícil)
-    else if (difficulty === "Mercador Experiente") {
-      if (count < 3 && !isLuxury) score -= 15; // Odeia vender pouco
+      if (count < 3 && !isLuxury) score -= 15;
       if (isLuxury) score += 10;
       if (count >= 4) score += 8;
-    }
-    // DIFÍCIL (A Nova Máquina Mortífera)
-    else if (difficulty === "Mestre do Souq") {
-      if (isLuxury) score += 15; // Obsessão absoluta por luxo
-      if (count < 3 && !isLuxury) score -= 30; // Nunca vende couro/tecido solto
-      if (count >= 4) score += 15; // Procura ativamente os maiores bónus
-
-      // Mestre vê o futuro: Se houver a mesma carta no mercado, ele prefere pegar mais do que vender o que já tem.
-      if (gameState.market.includes(goodType) && bot.hand.length < 7) {
+    } else if (difficulty === "Mercador Experiente") {
+      if (isLuxury) score += 15;
+      if (count < 3 && !isLuxury) score -= 30;
+      if (count >= 4) score += 15;
+      if (gameState.market.includes(goodType) && bot.hand.length < 7)
         score -= 15;
+    } else if (difficulty === "Mestre do Souq") {
+      // 1. MODO DESESPERO (Fim de jogo): Vende tudo o que tem para pontuar e forçar o fim!
+      if (isEndgame) {
+        score += 40;
+      }
+
+      // 2. CORRIDA: Se o oponente tem a mesma carta, venda rápido para roubar as melhores fichas!
+      const oppHas = opp.hand.filter((c) => c === goodType).length;
+      if (oppHas >= 2 && !isEndgame) {
+        score += 25;
+      }
+
+      if (isLuxury) {
+        score += 20;
+      } else {
+        // Se não for fim de jogo nem corrida, ele odeia vender pouco tecido/especiaria
+        if (count < 3 && !isEndgame && oppHas < 2) score -= 40;
+      }
+
+      if (count >= 4) score += 30; // Prioridade gigante a bónus de 4 e 5
+
+      // Se há mais da carta no mercado, pega em vez de vender (se tiver espaço)
+      if (
+        gameState.market.includes(goodType) &&
+        bot.hand.length < 7 &&
+        !isEndgame
+      ) {
+        score -= 30;
       }
     }
   } else if (move.type === "TAKE_ONE") {
@@ -173,18 +196,26 @@ function evaluateMove(gameState, move, difficulty) {
     const isLuxury = ["diamond", "gold", "silver"].includes(type);
     const val = getTopTokenValue(gameState, type);
 
-    score = val * 1.5; // Multiplicador base
-
-    // GLOBAL: Todos priorizam Diamante, Ouro e Prata brutalmente
+    score = val * 1.5;
     if (isLuxury) score += 8;
 
-    if (difficulty === "Mercador Experiente") {
-      // Normal já tenta fazer pequenos pares
+    if (difficulty === "Comerciante distraído") {
       score += bot.hand.filter((c) => c === type).length * 2;
-    } else if (difficulty === "Mestre do Souq") {
-      // Mestre vê que tem 2 tecidos, se vir 1 no mercado a pontuação explode para fazer trinca
+    } else if (difficulty === "Mercador Experiente") {
       score += bot.hand.filter((c) => c === type).length * 5;
       if (isLuxury) score += 10;
+    } else if (difficulty === "Mestre do Souq") {
+      score += bot.hand.filter((c) => c === type).length * 8;
+      if (isLuxury) score += 20;
+
+      // 3. NEGAÇÃO (BLOCKING): O Mestre lê a sua mão. Se vir que você está a juntar, ele rouba a carta!
+      const oppHas = opp.hand.filter((c) => c === type).length;
+      if (oppHas >= 2) score += 35; // Impede bónus grandes!
+      if (isLuxury && oppHas >= 1) score += 30; // Impede que você feche um par de luxo!
+
+      // 4. RISCO DO BARALHO: Se a sua mão está vazia, o Mestre evita pegar cartas normais soltas
+      // para não abrir uma carta de Diamante do baralho grátis para si!
+      if (opp.handCount <= 5 && !isLuxury && !isEndgame) score -= 15;
     }
   } else if (move.type === "TAKE_SEVERAL") {
     let valGained = 0;
@@ -199,29 +230,59 @@ function evaluateMove(gameState, move, difficulty) {
     move.payload.handIndices.forEach((idx) => {
       valLost += getTopTokenValue(gameState, bot.hand[idx]);
     });
-    valLost += move.payload.herdCount * 1.5; // O camelo tem um peso tático de ~1.5 pontos
+    valLost += move.payload.herdCount * 1.5;
 
-    // Se o valor ganho for muito maior que o perdido, o score explode
     score = (valGained - valLost) * 2;
-
-    // GLOBAL: Trocas que envolvam roubar luxo da mesa ganham prioridade absurda
     if (luxuryCount > 0) score += 12;
 
+    if (
+      difficulty === "Mercador Experiente" ||
+      difficulty === "Mestre do Souq"
+    ) {
+      if (score <= 0) score -= 50;
+      if (luxuryCount >= 2) score += 20;
+    }
+
     if (difficulty === "Mestre do Souq") {
-      if (score <= 0) score -= 50; // O Mestre NUNCA faz uma troca onde perca valor matemático
-      if (luxuryCount >= 2) score += 20; // Troca de sonho (Ex: 2 camelos por Ouro+Diamante)
+      // Se oponente está fraco, rouba tudo
+      if (opp.handCount < 4 && luxuryCount > 0) score += 20;
+
+      // 5. TROCA VENENOSA: O Mestre verifica se a carta que ele vai deitar no mercado
+      // é algo que você já tem na mão. Se for, ele cancela a troca para não o ajudar!
+      let feedingScore = 0;
+      move.payload.handIndices.forEach((idx) => {
+        const gaveType = bot.hand[idx];
+        if (opp.hand.includes(gaveType)) feedingScore += 30;
+      });
+      score -= feedingScore;
     }
   } else if (move.type === "TAKE_CAMELS") {
     const camelCount = gameState.market.filter((c) => c === "camel").length;
     score = camelCount * 1.5;
 
-    if (difficulty === "Mercador Experiente") {
-      if (bot.herd.length < 2) score += 6; // Pega se precisar de moeda de troca
-      if (camelCount >= 3) score -= 5; // Evita abrir o mercado dando 3 cartas grátis
-    } else if (difficulty === "Mestre do Souq") {
-      if (bot.herd.length === 0) score += 10; // Sem camelos não há boas trocas
-      // Se ele já tiver o prêmio final dos camelos garantido e o mercado tiver muitos, ignora-os!
+    if (difficulty === "Comerciante distraído") {
+      if (bot.herd.length < 2) score += 6;
+      if (camelCount >= 3) score -= 5;
+    } else if (difficulty === "Mercador Experiente") {
+      if (bot.herd.length === 0) score += 10;
       if (camelCount >= 3 && bot.herd.length >= 4) score -= 15;
+    } else if (difficulty === "Mestre do Souq") {
+      if (bot.herd.length === 0) score += 15;
+
+      // 6. ARMADILHA MAGISTRAL:
+      // Se você (oponente) tem 6 ou 7 cartas, não pode pegar no mercado.
+      // O Mestre limpa os camelos só para colocar cartas novas na mesa sabendo que você não as pode pegar!
+      if (opp.handCount >= 6 && camelCount >= 2) {
+        score += 50;
+      }
+      // Se você tem espaço (menos de 5 cartas), ele recusa-se a pegar camelos para não lhe dar as cartas do baralho.
+      else if (
+        opp.handCount <= 5 &&
+        camelCount >= 2 &&
+        gameState.deck.length > 5
+      ) {
+        score -= 40;
+      }
     }
   }
 
@@ -241,13 +302,14 @@ function calculateBotAction(gameState, difficulty) {
   for (const move of moves) {
     let score = evaluateMove(gameState, move, difficulty);
 
-    // Randomização inversamente proporcional à dificuldade para evitar comportamentos 100% robóticos
+    // Pequena margem de aleatoriedade para não ser 100% previsível
     if (difficulty === "Comerciante distraído") {
-      score += Math.random() * 8; // Ocasionalmente faz um erro parvo
+      score += Math.random() * 3;
     } else if (difficulty === "Mercador Experiente") {
-      score += Math.random() * 3; // Erra quase nunca
+      score += Math.random() * 0.1;
     } else {
-      score += Math.random() * 0.1; // Mestre do Souq é calculista e implacável
+      // Mestre joga matematicamente perfeito.
+      score += Math.random() * 0.001;
     }
 
     if (score > bestScore) {
@@ -260,16 +322,10 @@ function calculateBotAction(gameState, difficulty) {
 }
 
 function executeBotTurn(roomId, gameState, difficulty, processActionFunc) {
-  console.log(`🤖 [CPU] A pensar na sala ${roomId}... Nível: ${difficulty}`);
-
   setTimeout(() => {
     const action = calculateBotAction(gameState, difficulty);
-
-    if (action) {
-      console.log(`🤖 [CPU] Decidiu jogar: ${action.type}`);
-      processActionFunc(roomId, "CPU", action);
-    }
-  }, 5000);
+    if (action) processActionFunc(roomId, "CPU", action);
+  }, 4000); // 4 segundos de atraso para dar uma dinâmica natural
 }
 
 module.exports = { executeBotTurn };

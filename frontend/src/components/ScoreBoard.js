@@ -92,24 +92,18 @@ export default function ScoreBoard({ myPlayer, opponent }) {
   const oppScore = calculatePartial(opponent, true);
 
   const renderMiniTokensGrouped = (tokens, isOpponent) => {
-    if (tokens.length === 0)
+    // FILTRO: Pega APENAS as fichas que são do tipo bónus
+    const bonusTokens = tokens.filter(
+      (t) =>
+        t.type === "bonus" || t.id?.includes("bonus") || t.name === "bonus",
+    );
+
+    if (bonusTokens.length === 0)
       return (
         <span className="text-[10px] text-gray-400 dark:text-gray-500">
-          Nenhuma ficha
+          Nenhum bônus
         </span>
       );
-
-    const grouped = {};
-    tokens.forEach((t) => {
-      const key =
-        t.type === "bonus"
-          ? "bonus"
-          : t.type === "camel"
-            ? "camel"
-            : t.good || t.goodType || t.id || t.name || "good";
-      if (!grouped[key]) grouped[key] = [];
-      grouped[key].push(t);
-    });
 
     const chunkArray = (arr, size) => {
       const result = [];
@@ -119,31 +113,24 @@ export default function ScoreBoard({ myPlayer, opponent }) {
       return result;
     };
 
-    return (
-      <div className="flex flex-col gap-2 mt-2">
-        {Object.keys(grouped).map((groupKey) => {
-          const chunks = chunkArray(grouped[groupKey], 7);
+    // Quebra o array em blocos de no máximo 3 fichas por linha
+    const chunks = chunkArray(bonusTokens, 3);
 
-          return (
-            <div key={groupKey} className="flex flex-col gap-1">
-              {chunks.map((chunk, chunkIdx) => (
-                <div
-                  key={chunkIdx}
-                  className="flex flex-row items-center gap-1"
-                >
-                  {chunk.map((t, i) => {
-                    const val = t.type === "bonus" && isOpponent ? "" : t.value;
-                    return (
-                      <div key={i}>
-                        <MiniTokenBadge val={val} groupKey={groupKey} />
-                      </div>
-                    );
-                  })}
+    return (
+      <div className="flex flex-col gap-1 mt-2">
+        {chunks.map((chunk, chunkIdx) => (
+          <div key={chunkIdx} className="flex flex-row items-center gap-1">
+            {chunk.map((t, i) => {
+              // Se for oponente, esconde o valor da ficha de bónus
+              const val = isOpponent ? "" : t.value;
+              return (
+                <div key={i}>
+                  <MiniTokenBadge val={val} groupKey="bonus" />
                 </div>
-              ))}
-            </div>
-          );
-        })}
+              );
+            })}
+          </div>
+        ))}
       </div>
     );
   };

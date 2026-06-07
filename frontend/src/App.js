@@ -26,12 +26,10 @@ function App() {
     () => localStorage.getItem("jaipur_isWaiting") === "true",
   );
 
-  // ESTADOS DO MODO ESCURO
   const [isDarkMode, setIsDarkMode] = useState(
     () => localStorage.getItem("jaipur_theme") === "dark",
   );
 
-  // ESTADOS: CPU
   const [playVsCPU, setPlayVsCPU] = useState(false);
   const [cpuDifficulty, setCpuDifficulty] = useState("Comerciante distraído");
 
@@ -114,12 +112,18 @@ function App() {
       resetToLobby();
     });
 
+    // NOVO EVENTO: Se o oponente sair apenas no fim da partida, não encerra o jogo para si.
+    socket.on("opponentLeftPostGame", () => {
+      setOpponentConnected(false);
+    });
+
     return () => {
       socket.off("roomCreated");
       socket.off("gameReady");
       socket.off("updateGameState");
       socket.off("errorMsg");
       socket.off("opponentDisconnected");
+      socket.off("opponentLeftPostGame");
     };
   }, []);
 
@@ -131,7 +135,6 @@ function App() {
     socket.emit("createRoom", { roomId: randomCode, playerName });
   };
 
-  // FUNÇÃO CORRIGIDA: Iniciar jogo contra CPU
   const startCPUGame = () => {
     isManualAction.current = true;
     if (playerName.trim() === "")
@@ -139,8 +142,6 @@ function App() {
 
     const cpuRoomCode =
       "CPU-" + Math.floor(1000 + Math.random() * 9000).toString();
-
-    // CORREÇÃO APLICADA: Grava o ID da sala para o seu turno funcionar
     setRoomId(cpuRoomCode);
 
     socket.emit("createRoomVsCPU", {
@@ -168,7 +169,7 @@ function App() {
   };
 
   return (
-    <div className="min-h-screen bg-[#fcf8e8] dark:bg-gray-900 transition-colors duration-300 text-gray-800 dark:text-gray-100 font-body">
+    <div className="min-h-screen bg-[#fcf8e8] dark:bg-gray-900 transition-colors duration-300 text-gray-800 dark:text-gray-100 font-body overflow-x-hidden">
       {!inGame && (
         <button
           onClick={toggleTheme}
@@ -311,7 +312,6 @@ function App() {
                 onChange={(e) => setPlayerName(e.target.value)}
               />
 
-              {/* TOGGLE: Jogar com Amigos ou CPU */}
               <div className="flex bg-gray-100 dark:bg-gray-700 rounded-lg p-1">
                 <button
                   onClick={() => setPlayVsCPU(false)}
@@ -323,11 +323,10 @@ function App() {
                   onClick={() => setPlayVsCPU(true)}
                   className={`flex-1 flex items-center justify-center gap-2 py-2 rounded-md text-sm font-bold transition-all ${playVsCPU ? "bg-jaipur-gold text-white shadow-sm" : "text-gray-500 dark:text-gray-400 hover:bg-gray-200 dark:hover:bg-gray-600"}`}
                 >
-                  <FaRobot /> Jogar Solo
+                  <FaRobot /> Bot
                 </button>
               </div>
 
-              {/* MODO CPU */}
               <AnimatePresence mode="wait">
                 {playVsCPU ? (
                   <motion.div
@@ -337,7 +336,6 @@ function App() {
                     exit={{ opacity: 0, height: 0 }}
                     className="flex flex-col gap-4 overflow-hidden"
                   >
-                    {/* NOVOS BOTÕES DE DIFICULDADE (Substitui o Select) */}
                     <div className="flex flex-col gap-2 mt-2">
                       <p className="text-xs font-bold text-gray-500 dark:text-gray-400 uppercase tracking-widest text-left">
                         Nível de Dificuldade:
@@ -370,7 +368,7 @@ function App() {
                               : "bg-white border-gray-200 text-gray-500 hover:border-yellow-300 dark:bg-gray-800 dark:border-gray-600 dark:text-gray-400"
                           }`}
                         >
-                          <span>🟡 Normal</span>
+                          <span>🟡 Médio</span>
                           <span className="font-normal opacity-80 text-xs">
                             Mercador Experiente
                           </span>
@@ -397,11 +395,10 @@ function App() {
                       onClick={startCPUGame}
                       className="w-full bg-jaipur-gold hover:bg-yellow-600 text-white font-bold py-4 px-4 rounded-lg transition-colors shadow-md text-lg touch-manipulation select-none mt-2"
                     >
-                      🤖 Iniciar Partida Solo
+                      🤖 Iniciar partida
                     </motion.button>
                   </motion.div>
                 ) : (
-                  /* MODO MULTIPLAYER: Mostra Criar/Entrar */
                   <motion.div
                     key="multiplayer-mode"
                     initial={{ opacity: 0, height: 0 }}

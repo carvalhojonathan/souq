@@ -6,6 +6,7 @@ import {
   FaHome,
   FaArrowRight,
   FaHourglassHalf,
+  FaEye,
 } from "react-icons/fa";
 
 export default function RoundEndModal({
@@ -14,12 +15,11 @@ export default function RoundEndModal({
   players,
   onNextRound,
   onLeaveRoom,
+  onReviewBoard,
 }) {
   if (!stats || !players) return null;
 
   const opponentId = Object.keys(players).find((id) => id !== myId);
-
-  // CORREÇÃO: Força que você tenha os privilégios de anfitrião se o oponente for a CPU
   const isHost = myId === Object.keys(players)[0] || opponentId === "CPU";
 
   const myName = players[myId]?.name || "Você";
@@ -35,7 +35,6 @@ export default function RoundEndModal({
   const mySeals = players[myId]?.seals || 0;
   const oppSeals = players[opponentId]?.seals || 0;
 
-  // Função para calcular os pontos detalhados por tipo de ficha
   const getDetailedPoints = (player, details) => {
     const pts = {
       diamond: 0,
@@ -47,29 +46,19 @@ export default function RoundEndModal({
       bonus: 0,
       camel: 0,
     };
-
     if (player && player.tokens) {
       player.tokens.forEach((t) => {
-        if (t.type === "bonus" || (t.id && t.id.includes("bonus"))) {
+        if (t.type === "bonus" || (t.id && t.id.includes("bonus")))
           pts.bonus += t.value;
-        } else if (
-          t.type === "camel" ||
-          t.id === "camel" ||
-          t.name === "camel"
-        ) {
+        else if (t.type === "camel" || t.id === "camel" || t.name === "camel")
           pts.camel += t.value || 5;
-        } else {
+        else {
           const key = t.good || t.goodType || t.id || t.name;
           if (pts[key] !== undefined) pts[key] += t.value;
         }
       });
     }
-
-    // Garantia para o bónus do camelo (caso venha separado no objeto stats)
-    if (details?.hasCamelBonus && pts.camel === 0) {
-      pts.camel = 5;
-    }
-
+    if (details?.hasCamelBonus && pts.camel === 0) pts.camel = 5;
     return pts;
   };
 
@@ -89,7 +78,6 @@ export default function RoundEndModal({
         animate={{ scale: 1, opacity: 1, y: 0 }}
         className="bg-[#fcf8e8] dark:bg-gray-800 p-6 md:p-8 rounded-2xl shadow-2xl max-w-2xl w-full border-4 border-jaipur-gold dark:border-jaipur-gold relative transition-colors"
       >
-        {/* Título Principal */}
         <h2
           className={`text-3xl md:text-4xl font-display font-bold mb-6 text-center drop-shadow-sm ${matchWinner ? (matchWinner === myId ? "text-jaipur-green dark:text-green-400" : "text-jaipur-red dark:text-red-400") : amIWinner ? "text-jaipur-green dark:text-green-400" : "text-jaipur-red dark:text-red-400"}`}
         >
@@ -102,7 +90,6 @@ export default function RoundEndModal({
               : "❌ VOCÊ PERDEU A RODADA."}
         </h2>
 
-        {/* Resumo Detalhado das Pontuações */}
         <div className="flex flex-col gap-4 mb-8">
           <StatRow
             name={myName}
@@ -122,31 +109,33 @@ export default function RoundEndModal({
           />
         </div>
 
-        {/* Área de Botões */}
-        <div className="flex flex-col gap-3 mt-6">
+        <div className="flex flex-col md:flex-row gap-3 mt-6">
+          <button
+            onClick={onReviewBoard}
+            className="flex-1 bg-blue-600 hover:bg-blue-700 text-white font-bold py-4 rounded-xl shadow-lg text-lg flex items-center justify-center gap-2 transition-all transform hover:scale-[1.02]"
+          >
+            <FaEye className="text-xl" /> Ver a Mesa
+          </button>
+
           {matchWinner ? (
             <button
               onClick={onLeaveRoom}
-              className="w-full bg-jaipur-gold hover:bg-yellow-600 text-white font-bold py-4 rounded-xl shadow-lg text-lg flex items-center justify-center gap-2 transition-all transform hover:scale-[1.02]"
+              className="flex-1 bg-jaipur-gold hover:bg-yellow-600 text-white font-bold py-4 rounded-xl shadow-lg text-lg flex items-center justify-center gap-2 transition-all transform hover:scale-[1.02]"
             >
-              <FaHome className="text-xl" /> Ir para Tela Inicial
+              <FaHome className="text-xl" /> Tela Inicial
+            </button>
+          ) : isHost ? (
+            <button
+              onClick={onNextRound}
+              className="flex-1 bg-jaipur-green hover:bg-green-700 text-white font-bold py-4 rounded-xl shadow-lg text-lg flex items-center justify-center gap-2 transition-all transform hover:scale-[1.02]"
+            >
+              Próxima Rodada <FaArrowRight />
             </button>
           ) : (
-            <>
-              {isHost ? (
-                <button
-                  onClick={onNextRound}
-                  className="w-full bg-jaipur-green hover:bg-green-700 text-white font-bold py-4 rounded-xl shadow-lg text-lg flex items-center justify-center gap-2 transition-all transform hover:scale-[1.02]"
-                >
-                  Próxima Rodada <FaArrowRight />
-                </button>
-              ) : (
-                <div className="w-full bg-gray-200 dark:bg-gray-700 border-2 border-gray-300 dark:border-gray-600 text-gray-500 dark:text-gray-300 font-bold py-4 rounded-xl shadow-inner text-center flex items-center justify-center gap-3 text-sm md:text-base transition-colors">
-                  <FaHourglassHalf className="animate-spin-slow text-lg" />
-                  Aguardando o anfitrião continuar a partida...
-                </div>
-              )}
-            </>
+            <div className="flex-1 bg-gray-200 dark:bg-gray-700 border-2 border-gray-300 dark:border-gray-600 text-gray-500 dark:text-gray-300 font-bold py-4 rounded-xl shadow-inner text-center flex items-center justify-center gap-3 text-sm md:text-base transition-colors">
+              <FaHourglassHalf className="animate-spin-slow text-lg" />{" "}
+              Aguardando...
+            </div>
           )}
         </div>
       </motion.div>
@@ -154,7 +143,6 @@ export default function RoundEndModal({
   );
 }
 
-// Sub-componente com os pontos detalhados por ficha
 function StatRow({ name, isWinner, score, points, seals, isMe }) {
   const bgColor = isMe
     ? "bg-green-50 dark:bg-green-900/20"
@@ -170,7 +158,6 @@ function StatRow({ name, isWinner, score, points, seals, isMe }) {
     <div
       className={`p-4 rounded-xl border-2 flex flex-col gap-3 transition-colors ${isWinner ? `${bgColor} ${borderColor}` : "bg-white dark:bg-gray-700 border-gray-300 dark:border-gray-600"}`}
     >
-      {/* Cabeçalho do Jogador (Nome e Selos) */}
       <div className="flex justify-between items-center border-b border-gray-200 dark:border-gray-600 pb-2 transition-colors">
         <span
           className={`font-bold text-lg md:text-xl ${textColor} uppercase tracking-wide`}
@@ -189,9 +176,7 @@ function StatRow({ name, isWinner, score, points, seals, isMe }) {
           ))}
         </div>
       </div>
-
       <div className="flex flex-col sm:flex-row justify-between items-start sm:items-end gap-4">
-        {/* Detalhamento de Pontos em Grid */}
         <div className="grid grid-cols-2 md:grid-cols-4 gap-x-4 gap-y-1 text-xs md:text-sm text-gray-600 dark:text-gray-300 font-medium transition-colors w-full sm:w-auto">
           {points.diamond > 0 && (
             <span className="flex items-center gap-1 whitespace-nowrap">
@@ -254,16 +239,12 @@ function StatRow({ name, isWinner, score, points, seals, isMe }) {
               🐪 Rebanho: <strong>{points.camel}</strong>
             </span>
           )}
-
-          {/* Fallback se o jogador não tiver feito nenhum ponto */}
           {Object.values(points).every((v) => v === 0) && (
             <span className="col-span-2 text-gray-400 italic">
               Nenhum ponto registrado.
             </span>
           )}
         </div>
-
-        {/* Soma Total de PONTOS */}
         <div
           className={`flex items-center gap-2 text-4xl md:text-5xl font-display font-bold transition-colors self-end sm:self-auto ${textColor}`}
         >

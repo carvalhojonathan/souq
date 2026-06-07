@@ -12,7 +12,6 @@ const {
   checkRoundEnd,
   processRoundEnd,
 } = require("./gameLogic");
-// IMPORTA O CÉREBRO DO ROBÔ
 const { executeBotTurn } = require("./cpuBot");
 
 const app = express();
@@ -33,7 +32,6 @@ function getFilteredState(gameState, playerId) {
   if (opponentId && stateCopy.players[opponentId]) {
     stateCopy.players[opponentId].handCount =
       stateCopy.players[opponentId].hand.length;
-
     if (!stateCopy.roundEndStats) {
       delete stateCopy.players[opponentId].hand;
     }
@@ -70,7 +68,6 @@ function processAction(roomId, playerId, actionData, socket = null) {
 
   const playerName =
     playerId === room.players.host ? room.names.host : room.names.challenger;
-
   const pt = {
     diamond: "Diamante(s)",
     gold: "Ouro(s)",
@@ -98,10 +95,7 @@ function processAction(roomId, playerId, actionData, socket = null) {
       for (let i = 0; i < actionData.payload.herdCount; i++)
         givenNames.push("Camelo(s)");
 
-      const takenStr = countItems(takenNames);
-      const givenStr = countItems(givenNames);
-
-      logMsg = `${playerName} trocou ${givenStr} por ${takenStr}.`;
+      logMsg = `${playerName} trocou ${countItems(givenNames)} por ${countItems(takenNames)}.`;
       handleTakeSeveral(room.gameState, playerId, actionData.payload);
     } else if (actionData.type === "TAKE_CAMELS") {
       const camelsCount = room.gameState.market.filter(
@@ -124,22 +118,19 @@ function processAction(roomId, playerId, actionData, socket = null) {
     room.gameState.logs.unshift(logMsg);
     if (room.gameState.logs.length > 8) room.gameState.logs.pop();
 
-    // VERIFICA FIM DE RODADA
     if (checkRoundEnd(room.gameState)) {
       room.gameState.roundEndStats = processRoundEnd(
         room.gameState,
         room.players.host,
         room.players.challenger,
       );
-      room.gameState.currentTurn = null; // Bloqueia turno até a próxima rodada
+      room.gameState.currentTurn = null;
     } else {
-      // Passa a vez para o outro jogador
       room.gameState.currentTurn = Object.keys(room.gameState.players).find(
         (id) => id !== playerId,
       );
     }
 
-    // ATUALIZA AS TELAS DE QUEM FOR HUMANO
     if (room.players.host) {
       io.to(room.players.host).emit(
         "updateGameState",
@@ -153,7 +144,6 @@ function processAction(roomId, playerId, actionData, socket = null) {
       );
     }
 
-    // GATILHO DA CPU: Se agora for a vez do robô, acorda ele!
     if (room.gameState.currentTurn === "CPU" && !room.gameState.roundEndStats) {
       executeBotTurn(roomId, room.gameState, room.cpuDifficulty, processAction);
     }
@@ -173,7 +163,6 @@ io.on("connection", (socket) => {
   socket.on("createRoom", ({ roomId, playerName }) => {
     if (Object.keys(rooms).length >= 5)
       return socket.emit("errorMsg", "Servidor cheio (Máx 5 salas).");
-
     if (!rooms[roomId]) {
       socket.join(roomId);
       rooms[roomId] = {
@@ -185,26 +174,22 @@ io.on("connection", (socket) => {
     }
   });
 
-  // NOVO EVENTO: Criação Imediata da Sala contra a CPU
   socket.on("createRoomVsCPU", ({ roomId, playerName, difficulty }) => {
     if (Object.keys(rooms).length >= 5)
       return socket.emit("errorMsg", "Servidor cheio (Máx 5 salas).");
-
     socket.join(roomId);
     rooms[roomId] = {
-      players: { host: socket.id, challenger: "CPU" }, // ID Falso = CPU
+      players: { host: socket.id, challenger: "CPU" },
       names: { host: playerName, challenger: "🤖 " + difficulty },
       gameState: null,
       isCPUGame: true,
       cpuDifficulty: difficulty,
     };
-
     const room = rooms[roomId];
     room.gameState = initializeGame(room.players.host, room.players.challenger);
     room.gameState.players[room.players.host].name = room.names.host;
     room.gameState.players[room.players.challenger].name =
       room.names.challenger;
-
     socket.emit("gameReady", "Começou contra a CPU!");
     socket.emit(
       "updateGameState",
@@ -215,7 +200,6 @@ io.on("connection", (socket) => {
   socket.on("joinRoom", ({ roomId, playerName }) => {
     const room = rooms[roomId];
     if (!room) return socket.emit("errorMsg", "Sala não encontrada.");
-
     const normName = playerName.trim().toLowerCase();
     const hostName = room.names.host
       ? room.names.host.trim().toLowerCase()
@@ -227,19 +211,14 @@ io.on("connection", (socket) => {
     const handleReconnect = (role) => {
       const oldId = room.players[role];
       const newId = socket.id;
-
       room.players[role] = newId;
       socket.join(roomId);
-
       if (room.gameState && oldId && oldId !== newId) {
         room.gameState.players[newId] = room.gameState.players[oldId];
         delete room.gameState.players[oldId];
-
-        if (room.gameState.currentTurn === oldId) {
+        if (room.gameState.currentTurn === oldId)
           room.gameState.currentTurn = newId;
-        }
       }
-
       if (room.gameState) {
         io.to(newId).emit(
           "updateGameState",
@@ -256,16 +235,13 @@ io.on("connection", (socket) => {
       socket.join(roomId);
       room.players.challenger = socket.id;
       room.names.challenger = playerName;
-
       room.gameState = initializeGame(
         room.players.host,
         room.players.challenger,
       );
-
       room.gameState.players[room.players.host].name = room.names.host;
       room.gameState.players[room.players.challenger].name =
         room.names.challenger;
-
       io.to(roomId).emit("gameReady", "Começou!");
       io.to(room.players.host).emit(
         "updateGameState",
@@ -276,14 +252,10 @@ io.on("connection", (socket) => {
         getFilteredState(room.gameState, room.players.challenger),
       );
     } else {
-      socket.emit(
-        "errorMsg",
-        "Esta sala já está cheia. Tente usar exatamente o mesmo nome caso esteja a tentar reconectar-se.",
-      );
+      socket.emit("errorMsg", "Esta sala já está cheia.");
     }
   });
 
-  // O Evento do Cliente apenas direciona para o Processador Central
   socket.on("playAction", (roomId, actionData) => {
     processAction(roomId, socket.id, actionData, socket);
   });
@@ -291,59 +263,88 @@ io.on("connection", (socket) => {
   socket.on("requestNextRound", (roomId) => {
     const room = rooms[roomId];
     if (!room || !room.gameState || !room.gameState.roundEndStats) return;
-
     const winnerId = room.gameState.roundEndStats.roundWinnerId;
     const loserId =
       Object.keys(room.gameState.players).find((id) => id !== winnerId) ||
       room.players.host;
-
     room.gameState.roundEndStats = null;
     room.gameState = resetGameForNewRound(room.gameState, loserId);
-
     room.gameState.players[room.players.host].name = room.names.host;
     room.gameState.players[room.players.challenger].name =
       room.names.challenger;
 
-    // Atualiza humanos
-    if (room.players.host) {
+    if (room.players.host)
       io.to(room.players.host).emit(
         "updateGameState",
         getFilteredState(room.gameState, room.players.host),
       );
-    }
-    if (room.players.challenger && room.players.challenger !== "CPU") {
+    if (room.players.challenger && room.players.challenger !== "CPU")
       io.to(room.players.challenger).emit(
         "updateGameState",
         getFilteredState(room.gameState, room.players.challenger),
       );
-    }
-
-    // GATILHO DA CPU: Se a CPU perdeu a última rodada, é a vez dela começar!
-    if (room.gameState.currentTurn === "CPU") {
+    if (room.gameState.currentTurn === "CPU")
       executeBotTurn(roomId, room.gameState, room.cpuDifficulty, processAction);
-    }
   });
 
+  // NOVO: Lida com a saída respeitando o fim de jogo
   socket.on("leaveRoom", (roomId) => {
-    if (rooms[roomId]) {
-      socket.to(roomId).emit("opponentDisconnected");
+    const room = rooms[roomId];
+    if (room) {
+      const isMatchOver = room.gameState?.roundEndStats?.matchWinnerId;
+
+      if (room.players.host === socket.id) room.players.host = null;
+      if (room.players.challenger === socket.id) room.players.challenger = null;
       socket.leave(roomId);
+
+      if (isMatchOver) {
+        socket.to(roomId).emit("opponentLeftPostGame");
+        if (
+          !room.players.host &&
+          (!room.players.challenger || room.players.challenger === "CPU")
+        )
+          delete rooms[roomId];
+      } else {
+        socket.to(roomId).emit("opponentDisconnected");
+        delete rooms[roomId];
+      }
     }
   });
 
   socket.on("disconnect", () => {
+    for (const roomId in rooms) {
+      const room = rooms[roomId];
+      if (
+        room.players.host === socket.id ||
+        room.players.challenger === socket.id
+      ) {
+        const isMatchOver = room.gameState?.roundEndStats?.matchWinnerId;
+
+        if (room.players.host === socket.id) room.players.host = null;
+        if (room.players.challenger === socket.id)
+          room.players.challenger = null;
+
+        if (isMatchOver) {
+          io.to(roomId).emit("opponentLeftPostGame");
+          if (
+            !room.players.host &&
+            (!room.players.challenger || room.players.challenger === "CPU")
+          )
+            delete rooms[roomId];
+        } else {
+          io.to(roomId).emit("opponentDisconnected");
+          delete rooms[roomId];
+        }
+      }
+    }
     console.log(`Jogador desconectado: ${socket.id}`);
   });
 });
 
-// ==========================================
-// PRODUÇÃO - RENDER.COM
-// ==========================================
 app.use(express.static(path.join(__dirname, "../frontend/build")));
-
-app.get("*", (req, res) => {
-  res.sendFile(path.join(__dirname, "../frontend/build", "index.html"));
-});
+app.get("*", (req, res) =>
+  res.sendFile(path.join(__dirname, "../frontend/build", "index.html")),
+);
 
 const PORT = process.env.PORT || 3000;
 server.listen(PORT, () => console.log(`🚀 Servidor na porta ${PORT}`));
