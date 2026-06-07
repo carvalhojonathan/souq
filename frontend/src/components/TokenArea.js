@@ -46,7 +46,7 @@ const TokenBadge = ({ value, type, isHidden = false, isCompact = false }) => {
 
       {value !== undefined && !isHidden && (
         <span
-          className={`${badgeTextSize} font-bold leading-none text-gray-800 dark:text-gray-200 -mt-1 z-20`}
+          className={`${badgeTextSize} font-bold leading-none text-gray-800 dark:text-gray-200 mt-0.5 md:mt-1 z-20`}
         >
           {value}
         </span>
@@ -73,7 +73,7 @@ export default function TokenArea({ tokens }) {
     const isCompact = count > 6;
 
     return (
-      <div className="mb-4">
+      <div className="mb-2.5">
         <h4 className="text-[10px] md:text-xs font-bold text-gray-500 dark:text-gray-400 uppercase tracking-widest mb-0">
           {title}
         </h4>
@@ -84,7 +84,7 @@ export default function TokenArea({ tokens }) {
           <div
             className={`flex flex-row ${
               isCompact ? "flex-nowrap" : "flex-wrap"
-            } -space-x-3 md:-space-x-4 pl-1 pt-1 pb-1`}
+            } -space-x-3 md:-space-x-4 pl-1 pt-1 pb-0.5`}
           >
             {isArray
               ? group.map((t, i) => (
@@ -113,8 +113,8 @@ export default function TokenArea({ tokens }) {
 
   return (
     <div className="bg-white dark:bg-gray-800 p-3 md:p-4 rounded-xl shadow-sm border border-jaipur-gold dark:border-gray-700 h-full max-h-full overflow-y-auto custom-scrollbar transition-colors">
-      <div className="flex flex-col md:flex-col gap-1">
-        <div className="grid grid-cols-2 md:grid-cols-1 gap-x-4 gap-y-1">
+      <div className="flex flex-col md:flex-col gap-0.5">
+        <div className="grid grid-cols-2 md:grid-cols-1 gap-x-4 gap-y-0.5">
           <div className="flex flex-col order-1 md:order-2">
             {renderGroup("cloth", "Tecido")}
             {renderGroup("spice", "Especiaria")}
@@ -128,9 +128,9 @@ export default function TokenArea({ tokens }) {
           </div>
         </div>
 
-        <hr className="border-gray-200 dark:border-gray-700 my-1 md:my-2" />
+        <hr className="border-gray-200 dark:border-gray-700 my-1 md:my-1.5" />
 
-        <div className="grid grid-cols-2 md:grid-cols-1 gap-x-4 gap-y-1">
+        <div className="grid grid-cols-2 md:grid-cols-1 gap-x-4 gap-y-0.5">
           <div className="flex flex-col">
             {renderGroup("bonus5", "5 Cartas")}
             {renderGroup("bonus4", "4 Cartas")}

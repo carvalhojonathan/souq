@@ -31,6 +31,7 @@ export default function Card({
   isSelected = false,
   onClick,
   isDiscard = false,
+  sizeClassName = "",
 }) {
   const [imgError, setImgError] = useState(false);
 
@@ -48,7 +49,6 @@ export default function Card({
   const imgName = hidden ? "verso" : typeToName[type] || "verso";
   const imgSrc = `/images/cards/${imgName}.png`;
 
-  // Cores e Nomes para o Fallback
   const typeColors = {
     diamond: "bg-cyan-100 text-cyan-900 border-cyan-400",
     gold: "bg-yellow-400 text-yellow-900 border-yellow-600",
@@ -59,6 +59,7 @@ export default function Card({
     camel: "bg-yellow-200 text-yellow-900 border-yellow-600",
     back: "bg-jaipur-green text-jaipur-gold border-jaipur-gold",
   };
+
   const labels = {
     diamond: "Diamante",
     gold: "Ouro",
@@ -75,6 +76,10 @@ export default function Card({
     : typeColors[type] || typeColors.back;
   const fallbackLabel = hidden ? labels.back : labels[type] || labels.back;
 
+  const cardSizeClass =
+    sizeClassName ||
+    "w-[76px] h-[100px] md:w-[90px] md:h-[117px] lg:w-[100px] lg:h-[130px]";
+
   return (
     <motion.div
       layout
@@ -86,7 +91,7 @@ export default function Card({
         relative flex flex-col justify-center items-center
         rounded-lg cursor-pointer select-none font-body
         transition-shadow duration-200 touch-none border-2
-        w-[76px] h-[100px] md:w-[90px] md:h-[117px] lg:w-[100px] lg:h-[130px]
+        ${cardSizeClass}
         ${isSelected ? "ring-4 ring-jaipur-red shadow-xl -translate-y-2" : "shadow-md"}
         ${imgError ? fallbackStyle : "border-transparent"} 
       `}
@@ -104,7 +109,6 @@ export default function Card({
           }}
         />
       ) : (
-        // Componente de Fallback (Caso não haja imagem PNG)
         <div
           className={`w-[85%] h-[90%] border border-opacity-30 border-current flex flex-col items-center justify-center rounded pointer-events-none ${isDiscard ? "grayscale blur-[1px]" : ""}`}
         >
@@ -117,14 +121,12 @@ export default function Card({
         </div>
       )}
 
-      {/* Monte de Descarte: Número no centro reduzido para text-2xl */}
       {isDiscard && count !== undefined && (
         <span className="absolute inset-0 flex items-center justify-center text-2xl font-display font-bold text-white drop-shadow-[0_2px_4px_rgba(0,0,0,1)] z-10 pointer-events-none">
           {count}
         </span>
       )}
 
-      {/* Baralho (Não-Descarte): Número discreto no canto */}
       {!isDiscard && count !== undefined && (
         <span className="absolute bottom-1 right-1 text-xs font-bold bg-black bg-opacity-60 px-2 py-1 rounded-full text-white z-10 pointer-events-none">
           {count}

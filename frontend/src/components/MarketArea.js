@@ -10,6 +10,11 @@ export default function MarketArea({
   onSelectCard,
   className = "",
 }) {
+  const marketCardSize =
+    "w-[58px] h-[76px] sm:w-[66px] sm:h-[86px] md:w-[76px] md:h-[100px] lg:w-[84px] lg:h-[110px]";
+  const sidePileSize =
+    "w-[52px] h-[68px] sm:w-[60px] sm:h-[78px] md:w-[70px] md:h-[92px] lg:w-[78px] lg:h-[102px]";
+
   return (
     <div
       className={`p-2 rounded-lg shadow-sm border-2 border-jaipur-gold dark:border-yellow-700/50 bg-desert-light dark:bg-gray-800 flex flex-col min-w-0 ${className}`}
@@ -18,19 +23,20 @@ export default function MarketArea({
         Mercado
       </h2>
 
-      <div className="flex flex-row items-center justify-between min-h-[7rem] md:min-h-[8rem] p-2 bg-white dark:bg-gray-900 rounded border border-gray-300 dark:border-gray-700 w-full transition-colors relative overflow-x-auto overflow-y-hidden custom-scrollbar">
-        <div className="flex flex-col items-center flex-shrink-0 w-[50px] max-w-[50px] sm:w-[70px] sm:max-w-[70px] md:w-[85px] md:max-w-[85px] ml-1 sm:ml-3">
-          <Card type="deck" count={deckCount} />
+      <div className="flex flex-row items-stretch justify-between min-h-[7rem] md:min-h-[8rem] p-2 bg-white dark:bg-gray-900 rounded border border-gray-300 dark:border-gray-700 w-full transition-colors relative overflow-hidden">
+        <div className="flex flex-col items-center justify-center flex-shrink-0 w-[54px] sm:w-[62px] md:w-[72px] lg:w-[80px] ml-1 sm:ml-2">
+          <Card type="deck" count={deckCount} sizeClassName={sidePileSize} />
         </div>
 
-        <div className="flex flex-row items-center justify-start gap-2 sm:gap-3 md:gap-4 flex-grow min-w-max px-2 sm:px-3 border-l border-r border-dashed border-gray-300 dark:border-gray-700 mx-2 sm:mx-4">
+        <div className="flex flex-row items-center justify-center gap-1.5 sm:gap-2.5 md:gap-3 flex-grow min-w-0 px-2 sm:px-3 border-l border-r border-dashed border-gray-300 dark:border-gray-700 mx-2 sm:mx-3">
           {marketCards.map((cardType, index) => (
             <div
               key={`market-card-${index}`}
-              className="flex-shrink-0 w-[60px] max-w-[60px] sm:w-[75px] sm:max-w-[75px] md:w-[90px] md:max-w-[90px] transition-all duration-300"
+              className="flex-shrink-0 transition-all duration-300"
             >
               <Card
                 type={cardType}
+                sizeClassName={marketCardSize}
                 isSelected={selectedMarketCards.includes(index)}
                 onClick={() => {
                   if (isMyTurn) onSelectCard(index);
@@ -40,9 +46,12 @@ export default function MarketArea({
           ))}
         </div>
 
-        <div className="hidden sm:flex flex-col items-center flex-shrink-0 w-[50px] max-w-[50px] sm:w-[70px] sm:max-w-[70px] md:w-[85px] md:max-w-[85px] mr-1 sm:mr-2 opacity-75 blur-[2px] hover:blur-none hover:opacity-100 transition-all duration-300 cursor-default">
+        <div className="hidden sm:flex flex-col items-center justify-center flex-shrink-0 w-[54px] sm:w-[62px] md:w-[72px] lg:w-[80px] mr-1 sm:mr-2 opacity-75 blur-[2px] hover:blur-none hover:opacity-100 transition-all duration-300 cursor-default">
           {discardPile && discardPile.length > 0 ? (
-            <Card type={discardPile[discardPile.length - 1]} />
+            <Card
+              type={discardPile[discardPile.length - 1]}
+              sizeClassName={sidePileSize}
+            />
           ) : (
             <div className="w-full h-full aspect-[2/3] border-2 border-dashed border-gray-300 dark:border-gray-700 rounded-lg flex items-center justify-center text-xs text-gray-400">
               Vazio

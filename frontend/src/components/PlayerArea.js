@@ -30,14 +30,28 @@ export default function PlayerArea({
   const secretCount = bonusTokens.length;
   const totalSum = visibleSum + secretSum;
 
+  const handCount = isOpponent ? hand : hand.length;
+
+  const handCardSize =
+    handCount >= 6
+      ? "w-[56px] h-[74px] sm:w-[66px] sm:h-[86px] md:w-[76px] md:h-[100px] lg:w-[84px] lg:h-[110px]"
+      : "w-[76px] h-[100px] sm:w-[82px] sm:h-[108px] md:w-[90px] md:h-[117px] lg:w-[100px] lg:h-[130px]";
+
+  const herdCardSize = isOpponent
+    ? "w-[52px] h-[68px] sm:w-[60px] sm:h-[78px] md:w-[70px] md:h-[92px] lg:w-[76px] lg:h-[100px]"
+    : "w-[56px] h-[74px] sm:w-[66px] sm:h-[86px] md:w-[76px] md:h-[100px] lg:w-[84px] lg:h-[110px]";
+
+  const handGapClass =
+    handCount >= 6 ? "gap-1.5 sm:gap-2 md:gap-2.5" : "gap-2 sm:gap-3 md:gap-4";
+
   const renderHand = () => {
     if (isOpponent) {
       return Array.from({ length: hand }).map((_, i) => (
         <div
           key={`opp-card-${i}`}
-          className="flex-shrink-0 w-[55px] max-w-[55px] sm:w-[70px] sm:max-w-[70px] md:w-[85px] md:max-w-[85px] transition-all duration-300"
+          className="flex-shrink-0 transition-all duration-300"
         >
-          <Card type="back" hidden={true} />
+          <Card type="back" hidden={true} sizeClassName={handCardSize} />
         </div>
       ));
     }
@@ -45,10 +59,11 @@ export default function PlayerArea({
     return hand.map((cardType, index) => (
       <div
         key={`my-card-${index}`}
-        className="flex-shrink-0 w-[65px] max-w-[65px] sm:w-[80px] sm:max-w-[80px] md:w-[95px] md:max-w-[95px] transition-all duration-300"
+        className="flex-shrink-0 transition-all duration-300"
       >
         <Card
           type={cardType}
+          sizeClassName={handCardSize}
           isSelected={selectedHandCards.includes(index)}
           onClick={() => {
             if (isMyTurn) onSelectCard(index);
@@ -131,8 +146,10 @@ export default function PlayerArea({
         </div>
       </div>
 
-      <div className="flex flex-row items-center justify-between min-h-[7rem] md:min-h-[8rem] p-2 pr-3 sm:pr-4 bg-desert-light dark:bg-gray-900 rounded border border-desert-dark dark:border-gray-700 w-full transition-colors relative overflow-x-auto overflow-y-hidden custom-scrollbar">
-        <div className="flex flex-row items-center justify-start gap-2 sm:gap-3 md:gap-4 flex-grow min-w-max pr-2">
+      <div className="flex flex-row items-stretch justify-between min-h-[7rem] md:min-h-[8rem] p-2 pr-3 sm:pr-4 bg-desert-light dark:bg-gray-900 rounded border border-desert-dark dark:border-gray-700 w-full transition-colors relative overflow-hidden">
+        <div
+          className={`flex flex-row items-center justify-start ${handGapClass} flex-grow min-w-0 pr-2 overflow-hidden`}
+        >
           <AnimatePresence>{renderHand()}</AnimatePresence>
 
           {!isOpponent && hand.length === 0 && (
@@ -143,9 +160,13 @@ export default function PlayerArea({
         </div>
 
         {!isOpponent && herdCount > 0 && (
-          <div className="ml-2 sm:ml-auto pl-3 sm:pl-4 border-l-2 border-dashed border-gray-400 dark:border-gray-600 flex flex-col items-center justify-center transition-colors flex-shrink-0 mr-1">
-            <div className="w-[50px] max-w-[50px] sm:w-[70px] sm:max-w-[70px] md:w-[85px] md:max-w-[85px] flex-shrink-0">
-              <Card type="camel" count={herdCount} />
+          <div className="ml-2 sm:ml-auto pl-3 sm:pl-4 border-l-2 border-dashed border-gray-400 dark:border-gray-600 flex flex-col items-center justify-center transition-colors flex-shrink-0 mr-1 self-stretch">
+            <div className="flex items-center justify-center">
+              <Card
+                type="camel"
+                count={herdCount}
+                sizeClassName={herdCardSize}
+              />
             </div>
 
             <div className="mt-1 md:mt-2 flex items-center gap-0.5 md:gap-1">
@@ -199,9 +220,13 @@ export default function PlayerArea({
         )}
 
         {isOpponent && herdCount > 0 && (
-          <div className="ml-2 sm:ml-auto pl-3 sm:pl-4 border-l-2 border-dashed border-gray-400 dark:border-gray-600 flex flex-col items-center justify-center transition-colors flex-shrink-0 mr-1">
-            <div className="w-[40px] max-w-[40px] sm:w-[60px] sm:max-w-[60px] md:w-[75px] md:max-w-[75px] flex-shrink-0">
-              <Card type="camel" count={herdCount > 0 ? "?" : undefined} />
+          <div className="ml-2 sm:ml-auto pl-3 sm:pl-4 border-l-2 border-dashed border-gray-400 dark:border-gray-600 flex flex-col items-center justify-center transition-colors flex-shrink-0 mr-1 self-stretch">
+            <div className="flex items-center justify-center">
+              <Card
+                type="camel"
+                count={herdCount > 0 ? "?" : undefined}
+                sizeClassName={herdCardSize}
+              />
             </div>
           </div>
         )}
