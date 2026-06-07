@@ -1,6 +1,5 @@
 import React, { useState } from "react";
 
-// Adicionada propriedade isCompact
 const TokenBadge = ({ value, type, isHidden = false, isCompact = false }) => {
   const [imgError, setImgError] = useState(false);
 
@@ -16,36 +15,38 @@ const TokenBadge = ({ value, type, isHidden = false, isCompact = false }) => {
     bonus5: "bonus",
     camelToken: "rebanho",
   };
+
   const imgSrc = nameMap[type] ? `/images/tokens/${nameMap[type]}.png` : null;
 
-  // Se for compacto (Couro), fica ligeiramente menor para caber na linha
   const sizeClasses = isCompact
     ? "w-6 h-6 md:w-8 md:h-8"
     : "w-8 h-8 md:w-10 md:h-10";
+
   const textSize = isCompact ? "text-[10px] md:text-xs" : "text-xs md:text-sm";
   const badgeTextSize = isCompact
     ? "text-[9px] md:text-[10px]"
     : "text-[10px] md:text-xs";
 
   return (
-    <div className="relative inline-flex flex-col items-center bg-white dark:bg-gray-700 rounded-full border border-white dark:border-gray-800 transition-all hover:-translate-y-1 hover:z-20 z-10">
+    <div className="relative inline-flex flex-col items-center transition-all hover:-translate-y-1 hover:z-20 z-10">
       {imgSrc && !imgError ? (
         <img
           src={imgSrc}
           alt={type}
           onError={() => setImgError(true)}
-          className={`${sizeClasses} object-contain p-0.5`}
+          className={`${sizeClasses} object-contain p-[1px] drop-shadow-sm`}
         />
       ) : (
         <div
-          className={`${sizeClasses} rounded-full bg-gray-300 dark:bg-gray-600 flex items-center justify-center ${textSize} font-bold`}
+          className={`${sizeClasses} rounded-full bg-gray-300 dark:bg-gray-600 flex items-center justify-center ${textSize} font-bold border border-white/70 dark:border-gray-700`}
         >
           {isHidden ? "?" : value}
         </div>
       )}
+
       {value !== undefined && !isHidden && (
         <span
-          className={`absolute -bottom-2 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-600 px-1.5 py-0.5 rounded ${badgeTextSize} font-bold leading-none text-gray-800 dark:text-gray-200 z-20`}
+          className={`${badgeTextSize} font-bold leading-none text-gray-800 dark:text-gray-200 -mt-1 z-20`}
         >
           {value}
         </span>
@@ -67,14 +68,12 @@ export default function TokenArea({ tokens }) {
       : typeof group === "number"
         ? group
         : 0;
-    const isHidden = type.includes("bonus");
 
-    // MODO COMPACTO: Se houver mais de 6 fichas (Couro), ativa tamanho menor e força a não quebrar linha
+    const isHidden = type.includes("bonus");
     const isCompact = count > 6;
 
     return (
       <div className="mb-4">
-        {/* MARGEM REMOVIDA (mb-0) PARA COLAR AO TÍTULO */}
         <h4 className="text-[10px] md:text-xs font-bold text-gray-500 dark:text-gray-400 uppercase tracking-widest mb-0">
           {title}
         </h4>
@@ -82,9 +81,10 @@ export default function TokenArea({ tokens }) {
         {count === 0 ? (
           <span className="text-xs italic text-gray-400 pl-1">Esgotado</span>
         ) : (
-          // flex-nowrap garante que nunca quebram linha
           <div
-            className={`flex flex-row ${isCompact ? "flex-nowrap" : "flex-wrap"} -space-x-3 md:-space-x-4 pl-1 pt-1 pb-2`}
+            className={`flex flex-row ${
+              isCompact ? "flex-nowrap" : "flex-wrap"
+            } -space-x-3 md:-space-x-4 pl-1 pt-1 pb-1`}
           >
             {isArray
               ? group.map((t, i) => (
@@ -120,18 +120,22 @@ export default function TokenArea({ tokens }) {
             {renderGroup("spice", "Especiaria")}
             {renderGroup("leather", "Couro")}
           </div>
+
           <div className="flex flex-col order-2 md:order-1">
             {renderGroup("diamond", "Diamante")}
             {renderGroup("gold", "Ouro")}
             {renderGroup("silver", "Prata")}
           </div>
         </div>
+
         <hr className="border-gray-200 dark:border-gray-700 my-1 md:my-2" />
+
         <div className="grid grid-cols-2 md:grid-cols-1 gap-x-4 gap-y-1">
           <div className="flex flex-col">
             {renderGroup("bonus5", "5 Cartas")}
             {renderGroup("bonus4", "4 Cartas")}
           </div>
+
           <div className="flex flex-col">
             {renderGroup("bonus3", "3 Cartas")}
             {renderGroup("camelToken", "Maior Rebanho")}

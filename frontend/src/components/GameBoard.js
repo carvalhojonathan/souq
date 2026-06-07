@@ -39,22 +39,26 @@ export default function GameBoard({
     setSelectedHandCards((prev) =>
       prev.includes(index) ? prev.filter((i) => i !== index) : [...prev, index],
     );
+
   const toggleMarketSelection = (index) => {
     const clickedCard = gameState.market[index];
+
     if (clickedCard === "camel") {
       const camelIndices = gameState.market.reduce((acc, card, i) => {
         if (card === "camel") acc.push(i);
         return acc;
       }, []);
-      if (selectedMarketCards.includes(index))
+
+      if (selectedMarketCards.includes(index)) {
         setSelectedMarketCards((prev) =>
           prev.filter((i) => !camelIndices.includes(i)),
         );
-      else
+      } else {
         setSelectedMarketCards((prev) => {
           const others = prev.filter((i) => gameState.market[i] !== "camel");
           return [...others, ...camelIndices];
         });
+      }
     } else {
       setSelectedMarketCards((prev) =>
         prev.includes(index)
@@ -68,6 +72,7 @@ export default function GameBoard({
     setIsReviewingBoard(false);
     socket.emit("requestNextRound", roomId);
   };
+
   const handleLeaveMatch = () => {
     socket.emit("leaveRoom", roomId);
     onLeaveRoom();
@@ -76,6 +81,7 @@ export default function GameBoard({
   return (
     <>
       {showHelp && <HelpModal onClose={() => setShowHelp(false)} />}
+
       {gameState.roundEndStats && !isReviewingBoard && (
         <RoundEndModal
           stats={gameState.roundEndStats}
@@ -169,10 +175,9 @@ export default function GameBoard({
           />
         </div>
 
-        {/* Agora o Histórico tem a sua própria área (gridArea: "log")! */}
         <div
           style={{ gridArea: "log" }}
-          className="max-h-48 md:max-h-60 overflow-y-auto custom-scrollbar bg-white dark:bg-gray-900 rounded-xl shadow-sm border-2 border-jaipur-green dark:border-green-700/50 transition-colors"
+          className="self-start min-w-0 max-h-44 md:max-h-52 overflow-y-auto custom-scrollbar"
         >
           <ActionLog logs={gameState.logs} />
         </div>
