@@ -18,21 +18,21 @@ const TokenBadge = ({ value, type, isHidden = false }) => {
   const imgSrc = nameMap[type] ? `/images/tokens/${nameMap[type]}.png` : null;
 
   return (
-    <div className="relative inline-flex flex-col items-center bg-white dark:bg-gray-700 rounded-full shadow-md border border-gray-300 dark:border-gray-500 transition-all hover:-translate-y-1 hover:z-20 z-10">
+    <div className="relative inline-flex flex-col items-center bg-white dark:bg-gray-700 rounded-full shadow-sm border border-gray-200 dark:border-gray-500 transition-all hover:-translate-y-1 hover:z-20 z-10">
       {imgSrc && !imgError ? (
         <img
           src={imgSrc}
           alt={type}
           onError={() => setImgError(true)}
-          className="w-6 h-6 md:w-8 md:h-8 object-contain drop-shadow-sm p-0.5"
+          className="w-8 h-8 md:w-10 md:h-10 object-contain drop-shadow-sm p-0.5"
         />
       ) : (
-        <div className="w-6 h-6 md:w-8 md:h-8 rounded-full bg-gray-300 dark:bg-gray-600 flex items-center justify-center text-[10px] md:text-xs font-bold">
+        <div className="w-8 h-8 md:w-10 md:h-10 rounded-full bg-gray-300 dark:bg-gray-600 flex items-center justify-center text-xs md:text-sm font-bold">
           {isHidden ? "?" : value}
         </div>
       )}
       {value !== undefined && !isHidden && (
-        <span className="absolute -bottom-2 bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-600 px-1 rounded-sm text-[8px] md:text-[9px] font-bold leading-none text-gray-700 dark:text-gray-200">
+        <span className="absolute -bottom-2 bg-white border border-gray-200 px-1.5 rounded text-[10px] md:text-xs font-bold leading-none text-gray-800 z-20">
           {value}
         </span>
       )}
@@ -56,15 +56,14 @@ export default function TokenArea({ tokens }) {
     const isHidden = type.includes("bonus");
 
     return (
-      <div className="mb-3 md:mb-4">
+      <div className="mb-4">
         <h4 className="text-[10px] md:text-xs font-bold text-gray-500 dark:text-gray-400 uppercase tracking-widest mb-1">
           {title}
         </h4>
         {count === 0 ? (
           <span className="text-xs italic text-gray-400 pl-1">Esgotado</span>
         ) : (
-          // A TÉCNICA DAS FICHAS: As fichas usam "-space-x-3" para ficar em cima umas das outras!
-          <div className="flex flex-row flex-wrap -space-x-2 md:-space-x-3 pl-2 pt-1 pb-2">
+          <div className="flex flex-row flex-wrap -space-x-3 md:-space-x-4 pl-1 pt-1 pb-2">
             {isArray
               ? group.map((t, i) => (
                   <TokenBadge
@@ -90,11 +89,9 @@ export default function TokenArea({ tokens }) {
 
   return (
     <div className="bg-white dark:bg-gray-800 p-3 md:p-4 rounded-xl shadow-sm border border-jaipur-gold dark:border-gray-700 h-full max-h-full overflow-y-auto custom-scrollbar transition-colors">
-      <h3 className="text-xs font-bold text-gray-600 dark:text-gray-300 uppercase tracking-widest border-b border-gray-300 dark:border-gray-600 pb-2 mb-3">
-        💰 Fichas do Mercado
-      </h3>
-      <div className="flex flex-col md:flex-col gap-2">
-        <div className="grid grid-cols-2 md:grid-cols-1 gap-x-4 gap-y-2">
+      <div className="flex flex-col md:flex-col gap-1">
+        {/* GRUPO DE MERCADORIAS */}
+        <div className="grid grid-cols-2 md:grid-cols-1 gap-x-4 gap-y-1">
           <div className="flex flex-col order-1 md:order-2">
             {renderGroup("cloth", "Tecido")}
             {renderGroup("spice", "Especiaria")}
@@ -106,15 +103,20 @@ export default function TokenArea({ tokens }) {
             {renderGroup("silver", "Prata")}
           </div>
         </div>
-        <hr className="border-gray-200 dark:border-gray-700 my-2" />
-        <div className="grid grid-cols-2 md:grid-cols-1 gap-x-4 gap-y-2">
-          <div className="flex flex-col order-1 md:order-2">
-            {renderGroup("bonus3", "3 Cartas")}
-            {renderGroup("camelToken", "Maior Rebanho")}
-          </div>
-          <div className="flex flex-col order-2 md:order-1">
+
+        <hr className="border-gray-200 dark:border-gray-700 my-1 md:my-2" />
+
+        {/* GRUPO DE BÓNUS E REBANHO - Colunas invertidas no telemóvel! */}
+        <div className="grid grid-cols-2 md:grid-cols-1 gap-x-4 gap-y-1">
+          {/* Esquerda (Mobile) / Topo (PC) */}
+          <div className="flex flex-col">
             {renderGroup("bonus5", "5 Cartas")}
             {renderGroup("bonus4", "4 Cartas")}
+          </div>
+          {/* Direita (Mobile) / Base (PC) */}
+          <div className="flex flex-col">
+            {renderGroup("bonus3", "3 Cartas")}
+            {renderGroup("camelToken", "Maior Rebanho")}
           </div>
         </div>
       </div>

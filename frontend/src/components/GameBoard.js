@@ -133,7 +133,6 @@ export default function GameBoard({
           style={{ gridArea: "board" }}
           className="flex flex-col gap-3 md:gap-4"
         >
-          {/* A SUA MÃO (Movida para o topo) */}
           <PlayerArea
             isOpponent={false}
             isMyTurn={isMyTurn}
@@ -149,7 +148,6 @@ export default function GameBoard({
             className="shadow-sm rounded-xl dark:bg-gray-800 dark:border-gray-700"
           />
 
-          {/* O MERCADO (Ao centro) */}
           <MarketArea
             isMyTurn={isMyTurn}
             marketCards={gameState.market}
@@ -160,20 +158,20 @@ export default function GameBoard({
             className="shadow-sm rounded-xl dark:bg-gray-800 dark:border-gray-700"
           />
 
-          {/* OPONENTE E HISTÓRICO (Movidos para o fundo) */}
-          <div className="flex flex-col rounded-xl shadow-sm border-2 border-jaipur-red dark:border-red-900/50 overflow-hidden bg-gray-50 dark:bg-gray-800 transition-colors">
-            <PlayerArea
-              isOpponent={true}
-              playerName={opponent.name}
-              hand={opponent.handCount}
-              herdCount={opponent.herd.length}
-              seals={opponent.seals}
-              tokens={opponent.tokens}
-              className="border-none rounded-none shadow-none"
-            />
-            <div className="max-h-24 md:max-h-32 overflow-hidden bg-white dark:bg-gray-900 border-t-2 border-jaipur-red dark:border-red-900/50">
-              <ActionLog logs={gameState.logs} />
-            </div>
+          {/* Oponente */}
+          <PlayerArea
+            isOpponent={true}
+            playerName={opponent.name}
+            hand={opponent.handCount}
+            herdCount={opponent.herd.length}
+            seals={opponent.seals}
+            tokens={opponent.tokens}
+            className="shadow-sm rounded-xl dark:bg-gray-800 dark:border-gray-700"
+          />
+
+          {/* Histórico separado, com margem e borda VERDE */}
+          <div className="mt-1 md:mt-2 max-h-24 md:max-h-32 overflow-hidden bg-white dark:bg-gray-900 rounded-xl shadow-sm border-2 border-jaipur-green dark:border-green-700/50 transition-colors">
+            <ActionLog logs={gameState.logs} />
           </div>
         </div>
       </div>

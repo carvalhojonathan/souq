@@ -31,9 +31,10 @@ export default function PlayerArea({
   const renderHand = () => {
     if (isOpponent) {
       return Array.from({ length: hand }).map((_, i) => (
+        // CARTAS COM TAMANHO MÁXIMO DEFINIDO
         <div
           key={`opp-card-${i}`}
-          className="flex-shrink min-w-[28px] w-[50px] sm:w-[70px] md:w-[85px] transition-all duration-300"
+          className="flex-shrink min-w-[25px] w-[55px] max-w-[55px] sm:w-[70px] sm:max-w-[70px] md:w-[85px] md:max-w-[85px] transition-all duration-300"
         >
           <Card type="back" hidden={true} />
         </div>
@@ -42,7 +43,7 @@ export default function PlayerArea({
       return hand.map((cardType, index) => (
         <div
           key={`my-card-${index}`}
-          className="flex-shrink min-w-[35px] w-[60px] sm:w-[80px] md:w-[95px] transition-all duration-300"
+          className="flex-shrink min-w-[30px] w-[65px] max-w-[65px] sm:w-[80px] sm:max-w-[80px] md:w-[95px] md:max-w-[95px] transition-all duration-300"
         >
           <Card
             type={cardType}
@@ -117,7 +118,6 @@ export default function PlayerArea({
         </div>
       </div>
 
-      {/* Foi adicionado padding direito extra e ajustado o overflow para que a imagem do camelo não seja cortada! */}
       <div className="flex flex-row items-center justify-between min-h-[7rem] md:min-h-[8rem] p-2 pr-3 sm:pr-4 bg-desert-light dark:bg-gray-900 rounded border border-desert-dark dark:border-gray-700 w-full transition-colors relative overflow-x-auto overflow-y-hidden custom-scrollbar">
         <div className="flex flex-row items-center justify-start gap-1 sm:gap-2 flex-grow min-w-0 pr-1">
           <AnimatePresence>{renderHand()}</AnimatePresence>
@@ -130,7 +130,7 @@ export default function PlayerArea({
 
         {!isOpponent && herdCount > 0 && (
           <div className="ml-2 sm:ml-auto pl-3 sm:pl-4 border-l-2 border-dashed border-gray-400 dark:border-gray-600 flex flex-col items-center justify-center transition-colors flex-shrink-0 mr-1">
-            <div className="w-[50px] sm:w-[70px] md:w-[85px] flex-shrink-0">
+            <div className="w-[50px] max-w-[50px] sm:w-[70px] sm:max-w-[70px] md:w-[85px] md:max-w-[85px] flex-shrink-0">
               <Card type="camel" count={herdCount} />
             </div>
             <div className="mt-1 md:mt-2 flex items-center gap-0.5 md:gap-1">
@@ -170,7 +170,7 @@ export default function PlayerArea({
 
         {isOpponent && herdCount > 0 && (
           <div className="ml-2 sm:ml-auto pl-3 sm:pl-4 border-l-2 border-dashed border-gray-400 dark:border-gray-600 flex flex-col items-center justify-center transition-colors flex-shrink-0 mr-1">
-            <div className="w-[40px] sm:w-[60px] md:w-[75px] flex-shrink-0">
+            <div className="w-[40px] max-w-[40px] sm:w-[60px] sm:max-w-[60px] md:w-[75px] md:max-w-[75px] flex-shrink-0">
               <Card type="camel" count={herdCount > 0 ? "?" : undefined} />
             </div>
           </div>

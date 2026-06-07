@@ -36,7 +36,6 @@ export default function ActionPanel({
   ).length;
   const expectedHandSizeAfterTrade =
     myPlayer.hand.length + selectedMarket.length - selectedHand.length;
-
   const hasCommon = selectedHand.some((card) => selectedMarket.includes(card));
 
   const canTakeOne =
@@ -44,19 +43,16 @@ export default function ActionPanel({
     selectedMarket[0] !== "camel" &&
     selectedTotalToTrade === 0 &&
     myPlayer.hand.length < 7;
-
   const canTakeCamels =
     selectedMarket.length > 0 &&
     selectedMarket.every((c) => c === "camel") &&
     selectedTotalToTrade === 0;
-
   const canTrade =
     selectedMarket.length > 1 &&
     selectedMarket.length === selectedTotalToTrade &&
     selectedMarketCamels === 0 &&
     expectedHandSizeAfterTrade <= 7 &&
     !hasCommon;
-
   const canSell =
     selectedHand.length > 0 &&
     selectedMarket.length === 0 &&
@@ -87,23 +83,23 @@ export default function ActionPanel({
         </div>
       ) : (
         <>
+          {/* BOTÃO SUA VEZ / AGUARDANDO COM QUEBRA DE LINHA FORÇADA E ALINHADO */}
           <div
-            className={`flex flex-col items-center justify-center p-2 rounded border-2 w-[80px] md:w-[100px] flex-shrink-0 transition-colors shadow-sm ${isMyTurn ? "bg-jaipur-green border-green-700 text-white animate-pulse" : "bg-gray-100 dark:bg-gray-700 border-gray-300 dark:border-gray-600 text-gray-500 dark:text-gray-400"}`}
+            className={`flex flex-col items-center justify-center p-1 rounded border-2 w-[80px] md:w-[100px] flex-shrink-0 transition-colors shadow-sm ${isMyTurn ? "bg-jaipur-green border-green-700 text-white animate-pulse" : "bg-gray-100 dark:bg-gray-700 border-gray-300 dark:border-gray-600 text-gray-500 dark:text-gray-400"}`}
           >
-            <span className="text-[10px] md:text-[11px] font-bold text-center uppercase leading-tight tracking-wider">
+            <div className="text-[11px] md:text-[13px] font-bold text-center uppercase leading-tight tracking-wider flex flex-col items-center justify-center">
               {isMyTurn ? (
                 <>
-                  <br />
-                  SUA VEZ
+                  <span>SUA</span>
+                  <span>VEZ</span>
                 </>
               ) : (
                 <>
-                  AGUARDANDO
-                  <br />
-                  OPONENTE
+                  <span>AGUARDANDO</span>
+                  <span>OPONENTE</span>
                 </>
               )}
-            </span>
+            </div>
           </div>
 
           <div className="grid grid-cols-4 gap-1 md:gap-2 flex-grow">
