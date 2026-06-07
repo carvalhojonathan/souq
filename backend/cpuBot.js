@@ -3,7 +3,7 @@
 // ==========================================
 // BOT DA CPU
 // Fácil e Médio continuam naturais.
-// Difícil / Mestre do Souq joga de forma "apelona":
+// Difícil / Mestre do Souq joga de forma forte:
 // - lê a mão real do jogador;
 // - vê os valores reais dos bônus;
 // - simula respostas do oponente;
@@ -37,9 +37,11 @@ function sumTokens(player) {
 
 function countCards(cards) {
   const counts = {};
+
   cards.forEach((card) => {
     counts[card] = (counts[card] || 0) + 1;
   });
+
   return counts;
 }
 
@@ -55,7 +57,6 @@ function getExpectedBonus(count, gameState = null) {
 
   const pileName = getBonusPileName(count);
 
-  // No modo difícil o bot é "vidente": ele sabe o bônus exato do topo.
   if (
     gameState &&
     gameState.tokens[pileName] &&
@@ -78,6 +79,7 @@ function getSaleValue(gameState, goodType, count, useExactBonus = false) {
   }
 
   value += getExpectedBonus(count, useExactBonus ? gameState : null);
+
   return value;
 }
 
@@ -87,9 +89,11 @@ function getBestPossibleSaleValue(gameState, hand, useExactBonus = false) {
 
   for (const type of GOODS) {
     const count = counts[type] || 0;
+
     if (count === 0) continue;
 
     const minSell = LUXURY.includes(type) ? 2 : 1;
+
     if (count < minSell) continue;
 
     let best = 0;
@@ -130,6 +134,7 @@ function combinations(arr, size) {
   }
 
   backtrack(0, []);
+
   return result;
 }
 
@@ -162,6 +167,7 @@ function isRoundEnding(gameState) {
 function getRoundScores(gameState) {
   const playerIds = Object.keys(gameState.players);
   const [p1Id, p2Id] = playerIds;
+
   const p1 = gameState.players[p1Id];
   const p2 = gameState.players[p2Id];
 
@@ -225,6 +231,7 @@ function getMarketCount(gameState, type) {
 
 function getValidMoves(gameState, playerId) {
   const player = gameState.players[playerId];
+
   if (!player) return [];
 
   const moves = [];
@@ -247,7 +254,9 @@ function getValidMoves(gameState, playerId) {
       for (let amount = minSell; amount <= indices.length; amount++) {
         moves.push({
           type: "SELL_GOODS",
-          payload: { handIndices: indices.slice(0, amount) },
+          payload: {
+            handIndices: indices.slice(0, amount),
+          },
         });
       }
     }
@@ -257,24 +266,39 @@ function getValidMoves(gameState, playerId) {
   const camelCount = gameState.market.filter((c) => c === "camel").length;
 
   if (camelCount > 0) {
-    moves.push({ type: "TAKE_CAMELS", payload: {} });
+    moves.push({
+      type: "TAKE_CAMELS",
+      payload: {},
+    });
   }
 
   // 3. PEGAR UMA CARTA
   if (player.hand.length < 7) {
     gameState.market.forEach((card, index) => {
       if (card !== "camel") {
-        moves.push({ type: "TAKE_ONE", payload: { marketIndex: index } });
+        moves.push({
+          type: "TAKE_ONE",
+          payload: {
+            marketIndex: index,
+          },
+        });
       }
     });
   }
 
   // 4. TROCAR CARTAS
   const marketGoods = gameState.market
-    .map((type, index) => ({ type, index }))
+    .map((type, index) => ({
+      type,
+      index,
+    }))
     .filter((card) => card.type !== "camel");
 
-  const handCards = player.hand.map((type, index) => ({ type, index }));
+  const handCards = player.hand.map((type, index) => ({
+    type,
+    index,
+  }));
+
   const herdCount = player.herd.length;
   const maxTrade = Math.min(marketGoods.length, handCards.length + herdCount);
 
@@ -292,6 +316,7 @@ function getValidMoves(gameState, playerId) {
         handGiveCount++
       ) {
         const camelsToGive = amount - handGiveCount;
+
         if (camelsToGive > herdCount) continue;
 
         const handCombos = combinations(handCards, handGiveCount);
@@ -304,6 +329,7 @@ function getValidMoves(gameState, playerId) {
           if (givesSameType) continue;
 
           const newHandSize = player.hand.length - handGiveCount + amount;
+
           if (newHandSize > 7) continue;
 
           moves.push({
@@ -364,6 +390,7 @@ function applyMove(gameState, playerId, move) {
   if (move.type === "TAKE_ONE") {
     const { marketIndex } = move.payload;
     const [card] = state.market.splice(marketIndex, 1);
+
     player.hand.push(card);
     refillMarket(state);
   }
@@ -376,6 +403,7 @@ function applyMove(gameState, playerId, move) {
     }
 
     state.market = state.market.filter((card) => card !== "camel");
+
     refillMarket(state);
   }
 
@@ -392,6 +420,7 @@ function applyMove(gameState, playerId, move) {
 
     for (let i = 0; i < herdCount; i++) {
       const camel = player.herd.pop();
+
       if (camel) cardsGiven.push("camel");
     }
 
@@ -440,14 +469,11 @@ function evaluateState(gameState, botId = BOT_ID) {
 
   let score = 0;
 
-  // Pontos já garantidos valem muito.
   score += pointDiff * 12;
 
-  // Potencial da mão: o Mestre joga vendo a mão real do adversário.
   score += botHandPotential * 5.5;
   score -= oppHandPotential * 7.5;
 
-  // Camelos e ficha de maior rebanho.
   const camelLead = bot.herd.length - opp.herd.length;
 
   score += camelLead * 4;
@@ -455,11 +481,9 @@ function evaluateState(gameState, botId = BOT_ID) {
   if (bot.herd.length > opp.herd.length) score += 9;
   if (opp.herd.length > bot.herd.length) score -= 12;
 
-  // Espaço na mão é valioso, mas mão cheia pode obrigar venda boa.
   score += (7 - bot.hand.length) * 1.5;
   score -= (7 - opp.hand.length) * 0.8;
 
-  // Prioriza formar conjuntos grandes, especialmente de luxo.
   for (const type of GOODS) {
     const botCount = botCounts[type] || 0;
     const oppCount = oppCounts[type] || 0;
@@ -478,22 +502,26 @@ function evaluateState(gameState, botId = BOT_ID) {
       if (oppCount >= 3) score -= 25 + getExpectedBonus(oppCount, gameState);
     }
 
-    // Valor de negar carta do mercado ao adversário.
     if (oppCount >= 2 && marketCount > 0) score -= marketCount * 10;
     if (botCount >= 2 && marketCount > 0) score += marketCount * 8;
   }
 
-  // Controle do fim da rodada.
   const emptyStacks = getEmptyTokenStackCount(gameState);
 
   if (emptyStacks >= 2) {
-    if (pointDiff + botHandPotential >= oppHandPotential) score += 40;
-    else score -= 50;
+    if (pointDiff + botHandPotential >= oppHandPotential) {
+      score += 40;
+    } else {
+      score -= 50;
+    }
   }
 
   if (gameState.deck.length <= 6) {
-    if (pointDiff > 0) score += 35;
-    else score -= 35;
+    if (pointDiff > 0) {
+      score += 35;
+    } else {
+      score -= 35;
+    }
   }
 
   return score;
@@ -557,8 +585,12 @@ function evaluateMoveSimple(gameState, move, difficulty, playerId = BOT_ID) {
 
     move.payload.marketIndices.forEach((idx) => {
       const type = gameState.market[idx];
+
       gained += getTopTokenValue(gameState, type);
-      if (LUXURY.includes(type)) luxuryCount++;
+
+      if (LUXURY.includes(type)) {
+        luxuryCount++;
+      }
     });
 
     move.payload.handIndices.forEach((idx) => {
@@ -617,10 +649,9 @@ function minimax(gameState, depth, playerId, alpha, beta) {
   const isBotTurn = playerId === BOT_ID;
   const nextPlayerId = getOpponentId(gameState, playerId);
 
-  // Limite para manter o bot rápido, mas ainda muito forte.
   const orderedMoves = orderMovesForSearch(gameState, moves, playerId).slice(
     0,
-    18,
+    12,
   );
 
   if (isBotTurn) {
@@ -664,20 +695,17 @@ function calculateMasterAction(gameState) {
 
   const orderedMoves = orderMovesForSearch(gameState, moves, BOT_ID).slice(
     0,
-    24,
+    16,
   );
 
   for (const move of orderedMoves) {
     const nextState = applyMove(gameState, BOT_ID, move);
     const oppId = getOpponentId(gameState, BOT_ID);
 
-    // Profundidade 3 = CPU joga, humano responde, CPU planeja de novo.
-    let score = minimax(nextState, 3, oppId, -Infinity, Infinity);
+    let score = minimax(nextState, 2, oppId, -Infinity, Infinity);
 
-    // Bônus tático imediato para ações muito fortes.
     score += evaluateMoveSimple(gameState, move, "Mestre do Souq", BOT_ID) * 3;
 
-    // Se a jogada termina a rodada ganhando, é prioridade absoluta.
     if (isRoundEnding(nextState)) {
       const { winnerId } = getRoundScores(nextState);
       score += winnerId === BOT_ID ? 1000000 : -1000000;
@@ -727,7 +755,11 @@ function calculateBotAction(gameState, difficulty) {
 }
 
 function executeBotTurn(roomId, gameState, difficulty, processActionFunc) {
-  const delay = difficulty === "Mestre do Souq" ? 1200 : 4000;
+  const minDelay = 3000;
+  const maxDelay = 10000;
+  const delay = Math.floor(
+    minDelay + Math.random() * (maxDelay - minDelay + 1),
+  );
 
   setTimeout(() => {
     const action = calculateBotAction(gameState, difficulty);

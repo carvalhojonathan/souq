@@ -132,7 +132,7 @@ export default function Card({
       )}
 
       {isSelected && (
-        <div className="absolute inset-0 z-30 rounded-lg border-[4px] border-jaipur-red pointer-events-none shadow-[0_0_0_2px_rgba(255,255,255,0.9),0_0_10px_rgba(190,18,60,0.45)]" />
+        <div className="absolute inset-0 z-30 rounded-lg border-[4px] border-jaipur-green pointer-events-none shadow-[0_0_0_2px_rgba(255,255,255,0.9),0_0_10px_rgba(0,128,128,0.45)]" />
       )}
 
       {isDiscard && count !== undefined && (
