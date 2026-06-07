@@ -18,21 +18,21 @@ const TokenBadge = ({ value, type, isHidden = false }) => {
   const imgSrc = nameMap[type] ? `/images/tokens/${nameMap[type]}.png` : null;
 
   return (
-    <div className="flex flex-col items-center bg-white dark:bg-gray-700 rounded-full shadow-sm transition-colors">
+    <div className="relative inline-flex flex-col items-center bg-white dark:bg-gray-700 rounded-full shadow-md border border-gray-300 dark:border-gray-500 transition-all hover:-translate-y-1 hover:z-20 z-10">
       {imgSrc && !imgError ? (
         <img
           src={imgSrc}
           alt={type}
           onError={() => setImgError(true)}
-          className="w-6 h-6 md:w-8 md:h-8 object-contain drop-shadow-sm"
+          className="w-6 h-6 md:w-8 md:h-8 object-contain drop-shadow-sm p-0.5"
         />
       ) : (
-        <div className="w-6 h-6 md:w-8 md:h-8 rounded-full bg-gray-300 dark:bg-gray-600 border border-gray-400 flex items-center justify-center text-[10px] md:text-xs font-bold">
+        <div className="w-6 h-6 md:w-8 md:h-8 rounded-full bg-gray-300 dark:bg-gray-600 flex items-center justify-center text-[10px] md:text-xs font-bold">
           {isHidden ? "?" : value}
         </div>
       )}
       {value !== undefined && !isHidden && (
-        <span className="text-[9px] md:text-[11px] font-bold mt-[1px] leading-none text-gray-700 dark:text-gray-200">
+        <span className="absolute -bottom-2 bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-600 px-1 rounded-sm text-[8px] md:text-[9px] font-bold leading-none text-gray-700 dark:text-gray-200">
           {value}
         </span>
       )}
@@ -47,7 +47,6 @@ export default function TokenArea({ tokens }) {
     const group = tokens[type];
     if (group === undefined || group === null) return null;
 
-    // Verifica se é array (mercadorias visíveis) ou número (fichas secretas do servidor)
     const isArray = Array.isArray(group);
     const count = isArray
       ? group.length
@@ -57,14 +56,15 @@ export default function TokenArea({ tokens }) {
     const isHidden = type.includes("bonus");
 
     return (
-      <div className="mb-2 md:mb-3">
+      <div className="mb-3 md:mb-4">
         <h4 className="text-[10px] md:text-xs font-bold text-gray-500 dark:text-gray-400 uppercase tracking-widest mb-1">
           {title}
         </h4>
         {count === 0 ? (
-          <span className="text-xs italic text-gray-400">Esgotado</span>
+          <span className="text-xs italic text-gray-400 pl-1">Esgotado</span>
         ) : (
-          <div className="flex flex-wrap gap-0.5 md:gap-1">
+          // A TÉCNICA DAS FICHAS: As fichas usam "-space-x-3" para ficar em cima umas das outras!
+          <div className="flex flex-row flex-wrap -space-x-2 md:-space-x-3 pl-2 pt-1 pb-2">
             {isArray
               ? group.map((t, i) => (
                   <TokenBadge
