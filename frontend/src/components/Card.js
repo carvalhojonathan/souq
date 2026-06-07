@@ -96,11 +96,7 @@ export default function Card({
         rounded-lg cursor-pointer select-none font-body
         transition-shadow duration-200 touch-none border-2
         ${cardSizeClass}
-        ${
-          isSelected
-            ? "ring-4 ring-inset ring-jaipur-red shadow-xl"
-            : "shadow-md"
-        }
+        ${isSelected ? "shadow-xl" : "shadow-md"}
         ${imgError ? fallbackStyle : "border-transparent"}
       `}
     >
@@ -135,14 +131,18 @@ export default function Card({
         </div>
       )}
 
+      {isSelected && (
+        <div className="absolute inset-0 z-30 rounded-lg border-[4px] border-jaipur-red pointer-events-none shadow-[0_0_0_2px_rgba(255,255,255,0.9),0_0_10px_rgba(190,18,60,0.45)]" />
+      )}
+
       {isDiscard && count !== undefined && (
-        <span className="absolute inset-0 flex items-center justify-center text-2xl font-display font-bold text-white drop-shadow-[0_2px_4px_rgba(0,0,0,1)] z-10 pointer-events-none">
+        <span className="absolute inset-0 flex items-center justify-center text-2xl font-display font-bold text-white drop-shadow-[0_2px_4px_rgba(0,0,0,1)] z-40 pointer-events-none">
           {count}
         </span>
       )}
 
       {!isDiscard && count !== undefined && (
-        <span className="absolute bottom-1 right-1 text-xs font-bold bg-black bg-opacity-60 px-2 py-1 rounded-full text-white z-10 pointer-events-none">
+        <span className="absolute bottom-1 right-1 text-xs font-bold bg-black bg-opacity-60 px-2 py-1 rounded-full text-white z-40 pointer-events-none">
           {count}
         </span>
       )}
