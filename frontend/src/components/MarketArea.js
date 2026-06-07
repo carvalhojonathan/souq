@@ -10,76 +10,47 @@ export default function MarketArea({
   onSelectCard,
   className = "",
 }) {
-  const topDiscard =
-    discardPile.length > 0 ? discardPile[discardPile.length - 1] : null;
-
   return (
     <div
-      // AQUI: dark:bg-gray-800 e dark:border-gray-700
-      className={`bg-desert-base dark:bg-gray-800 p-3 rounded-lg shadow-inner border border-desert-dark dark:border-gray-700 flex flex-col items-center transition-colors ${className}`}
+      className={`p-2 rounded-lg shadow-sm border-2 border-jaipur-gold dark:border-yellow-700/50 bg-desert-light dark:bg-gray-800 flex flex-col min-w-0 ${className}`}
     >
-      <h2 className="font-display font-bold text-sm text-gray-800 dark:text-gray-300 mb-3 tracking-widest uppercase">
+      <h2 className="font-display font-bold text-sm text-jaipur-gold dark:text-yellow-500 mb-2 px-2 uppercase tracking-widest text-center">
         Mercado
       </h2>
 
-      <div className="flex flex-row gap-4 items-center w-full justify-center">
-        {/* Baralho */}
-        <div className="flex flex-col items-center">
-          <div className="relative">
-            {deckCount > 0 ? (
-              <>
-                {deckCount > 5 && (
-                  <div className="absolute top-1 left-1">
-                    <Card type="back" hidden={true} />
-                  </div>
-                )}
-                <div className="relative z-10">
-                  <Card type="back" hidden={true} count={deckCount} />
-                </div>
-              </>
-            ) : (
-              <div className="w-[76px] h-[100px] md:w-[90px] md:h-[117px] lg:w-[100px] lg:h-[130px] border-2 border-dashed border-gray-400 dark:border-gray-600 rounded-lg flex items-center justify-center bg-gray-200 dark:bg-gray-700 bg-opacity-50 text-gray-400 dark:text-gray-400 text-[10px]">
-                Esgotado
-              </div>
-            )}
-          </div>
+      <div className="flex flex-row items-center justify-between min-h-[7rem] md:min-h-[8rem] p-2 bg-white dark:bg-gray-900 rounded border border-gray-300 dark:border-gray-700 w-full transition-colors relative overflow-hidden">
+        {/* BARALHO (DECK) */}
+        <div className="flex flex-col items-center flex-shrink-0 w-[45px] sm:w-[70px] md:w-[85px]">
+          <Card type="deck" count={deckCount} />
         </div>
 
-        {/* Mercado Central */}
-        <div className="flex gap-1 p-2 bg-white dark:bg-gray-700 bg-opacity-40 dark:bg-opacity-50 rounded shadow-sm border border-white dark:border-gray-600 border-opacity-50">
+        {/* CARTAS DO MERCADO CENTRAL */}
+        <div className="flex flex-row items-center justify-center gap-1 sm:gap-2 flex-grow min-w-0 px-1 sm:px-2 border-l border-r border-dashed border-gray-300 dark:border-gray-700 mx-1 sm:mx-2">
           {marketCards.map((cardType, index) => (
-            <Card
-              key={`market-card-${index}`}
-              type={cardType}
-              isSelected={selectedMarketCards.includes(index)}
-              onClick={() => {
-                if (isMyTurn) onSelectCard(index);
-              }}
-            />
-          ))}
-          {Array.from({ length: 5 - marketCards.length }).map((_, index) => (
             <div
-              key={`empty-market-${index}`}
-              className="w-[76px] h-[100px] md:w-[90px] md:h-[117px] lg:w-[100px] lg:h-[130px] border border-dashed border-gray-400 dark:border-gray-600 rounded bg-transparent"
-            ></div>
+              key={`market-card-${index}`}
+              className="flex-shrink min-w-[35px] w-[55px] sm:w-[75px] md:w-[90px] transition-all duration-300"
+            >
+              <Card
+                type={cardType}
+                isSelected={selectedMarketCards.includes(index)}
+                onClick={() => {
+                  if (isMyTurn) onSelectCard(index);
+                }}
+              />
+            </div>
           ))}
         </div>
 
-        {/* Descarte */}
-        <div className="flex flex-col items-center">
-          <div className="relative">
-            {topDiscard ? (
-              <Card
-                type={topDiscard}
-                isDiscard={true}
-                count={discardPile.length}
-              />
-            ) : (
-              <div className="w-[76px] h-[100px] md:w-[90px] md:h-[117px] lg:w-[100px] lg:h-[130px] border-2 border-dashed border-gray-400 dark:border-gray-600 rounded-lg flex items-center justify-center bg-gray-200 dark:bg-gray-700 bg-opacity-50 text-gray-400 dark:text-gray-400 text-[10px]">
-                Vazio
-              </div>
-            )}
-          </div>
+        {/* PILHA DE DESCARTE (Oculta em telemóveis: hidden sm:flex) */}
+        <div className="hidden sm:flex flex-col items-center flex-shrink-0 w-[55px] sm:w-[70px] md:w-[85px]">
+          {discardPile && discardPile.length > 0 ? (
+            <Card type={discardPile[discardPile.length - 1]} />
+          ) : (
+            <div className="w-full h-full aspect-[2/3] border-2 border-dashed border-gray-300 dark:border-gray-700 rounded-lg flex items-center justify-center text-xs text-gray-400">
+              Vazio
+            </div>
+          )}
         </div>
       </div>
     </div>

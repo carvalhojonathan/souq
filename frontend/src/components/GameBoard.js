@@ -22,9 +22,11 @@ export default function GameBoard({
   const [selectedMarketCards, setSelectedMarketCards] = useState([]);
   const [selectedHerdCount, setSelectedHerdCount] = useState(0);
 
+  // Estado para controlar se o jogador fechou o modal de fim de jogo para ver a mesa
   const [isReviewingBoard, setIsReviewingBoard] = useState(false);
 
   useEffect(() => {
+    // Quando uma nova rodada começa, reseta o estado de visualização da mesa
     if (!gameState.roundEndStats) {
       setIsReviewingBoard(false);
     }
@@ -36,6 +38,7 @@ export default function GameBoard({
   const opponent = gameState.players[opponentId];
   const isMyTurn = gameState.isMyTurn;
 
+  // Tela de carregamento caso os dados demorem uma fração de segundo a chegar
   if (!myPlayer || !opponent) {
     return (
       <div className="flex flex-col items-center justify-center min-h-[50vh] text-center">
@@ -47,11 +50,13 @@ export default function GameBoard({
     );
   }
 
+  // Alterna a seleção de cartas na mão
   const toggleHandSelection = (index) =>
     setSelectedHandCards((prev) =>
       prev.includes(index) ? prev.filter((i) => i !== index) : [...prev, index],
     );
 
+  // Alterna a seleção de cartas no mercado (com lógica especial para Camelos)
   const toggleMarketSelection = (index) => {
     const clickedCard = gameState.market[index];
     if (clickedCard === "camel") {
@@ -90,8 +95,10 @@ export default function GameBoard({
 
   return (
     <>
+      {/* Modal de Regras */}
       {showHelp && <HelpModal onClose={() => setShowHelp(false)} />}
 
+      {/* Modal de Fim de Rodada/Jogo (Escondido se o jogador estiver a ver a mesa) */}
       {gameState.roundEndStats && !isReviewingBoard && (
         <RoundEndModal
           stats={gameState.roundEndStats}
@@ -103,7 +110,9 @@ export default function GameBoard({
         />
       )}
 
+      {/* GRELHA PRINCIPAL DO JOGO */}
       <div className="game-board-container relative">
+        {/* CABEÇALHO */}
         <div style={{ gridArea: "header" }}>
           <GameHeader
             opponentConnected={opponentConnected}
@@ -115,6 +124,7 @@ export default function GameBoard({
           />
         </div>
 
+        {/* PAINEL DE AÇÕES */}
         <div style={{ gridArea: "actions" }}>
           <ActionPanel
             socket={socket}
@@ -141,15 +151,45 @@ export default function GameBoard({
           />
         </div>
 
+        {/* ÁREA DE FICHAS (Sidebar Esquerda no PC) */}
         <div style={{ gridArea: "tokens" }}>
           <TokenArea tokens={gameState.tokens} />
         </div>
 
-        {/* MESA PRINCIPAL (A Mão do Jogador primeiro, depois Mercado, depois Oponente) */}
+        {/* MESA PRINCIPAL */}
         <div
           style={{ gridArea: "board" }}
           className="flex flex-col gap-3 md:gap-4"
         >
+          {/* BLOCO UNIFICADO: OPONENTE + HISTÓRICO */}
+          <div className="flex flex-col rounded-xl shadow-sm border-2 border-jaipur-red dark:border-red-900/50 overflow-hidden bg-gray-50 dark:bg-gray-800 transition-colors">
+            <PlayerArea
+              isOpponent={true}
+              playerName={opponent.name}
+              hand={opponent.handCount}
+              herdCount={opponent.herd.length}
+              seals={opponent.seals}
+              tokens={opponent.tokens}
+              className="border-none rounded-none shadow-none" /* Remove as bordas duplas para unificar */
+            />
+            {/* Histórico "colado" abaixo da mão do oponente */}
+            <div className="max-h-24 md:max-h-32 overflow-hidden bg-white dark:bg-gray-900 border-t-2 border-jaipur-red dark:border-red-900/50">
+              <ActionLog logs={gameState.logs} />
+            </div>
+          </div>
+
+          {/* O MERCADO (Ao centro) */}
+          <MarketArea
+            isMyTurn={isMyTurn}
+            marketCards={gameState.market}
+            deckCount={gameState.deck.length}
+            discardPile={gameState.discardPile}
+            selectedMarketCards={selectedMarketCards}
+            onSelectCard={toggleMarketSelection}
+            className="shadow-sm rounded-xl dark:bg-gray-800 dark:border-gray-700"
+          />
+
+          {/* A SUA MÃO (Em baixo) */}
           <PlayerArea
             isOpponent={false}
             isMyTurn={isMyTurn}
@@ -164,34 +204,6 @@ export default function GameBoard({
             onHerdSelect={setSelectedHerdCount}
             className="shadow-sm rounded-xl dark:bg-gray-800 dark:border-gray-700"
           />
-
-          <MarketArea
-            isMyTurn={isMyTurn}
-            marketCards={gameState.market}
-            deckCount={gameState.deck.length}
-            discardPile={gameState.discardPile}
-            selectedMarketCards={selectedMarketCards}
-            onSelectCard={toggleMarketSelection}
-            className="shadow-sm rounded-xl dark:bg-gray-800 dark:border-gray-700"
-          />
-
-          <PlayerArea
-            isOpponent={true}
-            playerName={opponent.name}
-            hand={opponent.handCount}
-            herdCount={opponent.herd.length}
-            seals={opponent.seals}
-            tokens={opponent.tokens}
-            className="shadow-sm rounded-xl dark:bg-gray-800 dark:border-gray-700"
-          />
-        </div>
-
-        {/* HISTÓRICO SEPARADO */}
-        <div
-          style={{ gridArea: "log" }}
-          className="max-h-32 md:max-h-48 overflow-hidden shadow-sm rounded-xl dark:bg-gray-800 dark:border-gray-700 bg-white border border-gray-200"
-        >
-          <ActionLog logs={gameState.logs} />
         </div>
       </div>
     </>

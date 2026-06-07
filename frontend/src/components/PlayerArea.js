@@ -9,7 +9,7 @@ export default function PlayerArea({
   hand,
   herdCount,
   seals,
-  tokens = [], // <-- NOVO: Recebe as fichas para calcular o placar
+  tokens = [],
   selectedHandCards = [],
   onSelectCard,
   selectedHerdCount = 0,
@@ -17,7 +17,6 @@ export default function PlayerArea({
   isMyTurn = false,
   className = "",
 }) {
-  // Lógica de cálculo do Placar
   const visibleSum = tokens.reduce(
     (sum, t) => (t.type === "good" ? sum + t.value : sum),
     0,
@@ -32,9 +31,10 @@ export default function PlayerArea({
   const renderHand = () => {
     if (isOpponent) {
       return Array.from({ length: hand }).map((_, i) => (
+        // Lógica inteligente: Têm um tamanho base confortável (w-[50px] a [85px]), e só encolhem (flex-shrink) se faltar espaço.
         <div
           key={`opp-card-${i}`}
-          className="flex-shrink min-w-[25px] sm:min-w-[40px] max-w-max transition-all duration-300 [&>*]:w-full [&>*]:max-w-[45px] sm:[&>*]:max-w-[70px] md:[&>*]:max-w-max [&>*]:h-auto"
+          className="flex-shrink min-w-[28px] w-[50px] sm:w-[70px] md:w-[85px] transition-all duration-300"
         >
           <Card type="back" hidden={true} />
         </div>
@@ -43,7 +43,7 @@ export default function PlayerArea({
       return hand.map((cardType, index) => (
         <div
           key={`my-card-${index}`}
-          className="flex-shrink min-w-[35px] sm:min-w-[45px] max-w-max transition-all duration-300 [&>*]:w-full [&>*]:max-w-[50px] sm:[&>*]:max-w-[70px] md:[&>*]:max-w-max [&>*]:h-auto"
+          className="flex-shrink min-w-[35px] w-[60px] sm:w-[80px] md:w-[95px] transition-all duration-300"
         >
           <Card
             type={cardType}
@@ -63,9 +63,8 @@ export default function PlayerArea({
 
   return (
     <div
-      className={`p-2 rounded-lg shadow-sm border-2 transition-colors flex flex-col min-w-0 ${areaStyle} ${className}`}
+      className={`p-2 shadow-sm border-2 transition-colors flex flex-col min-w-0 ${areaStyle} ${className}`}
     >
-      {/* CABEÇALHO COM PLACAR PARCIAL */}
       <div className="flex justify-between items-center mb-2 px-2 flex-shrink-0 flex-wrap gap-2 border-b border-gray-200 dark:border-gray-700 pb-1.5">
         <div className="flex items-center flex-wrap gap-1.5 md:gap-2">
           <h2
@@ -75,11 +74,9 @@ export default function PlayerArea({
               ? `👤 ${playerName || "Oponente"}`
               : `🐫 ${playerName || "Você"}`}
           </h2>
-
           <span className="text-gray-300 dark:text-gray-600 font-bold hidden sm:inline">
             |
           </span>
-
           <div className="flex items-center gap-1 font-display font-bold text-sm md:text-base text-gray-700 dark:text-gray-200">
             {isOpponent ? (
               <>
@@ -97,8 +94,6 @@ export default function PlayerArea({
               </>
             )}
           </div>
-
-          {/* Renderização das Fichas Bónus */}
           {bonusTokens.length > 0 && (
             <div className="flex items-center gap-0.5 ml-1">
               {bonusTokens.map((t, i) => (
@@ -113,7 +108,6 @@ export default function PlayerArea({
             </div>
           )}
         </div>
-
         <div className="flex gap-1 ml-auto">
           {Array.from({ length: 2 }).map((_, i) => (
             <FaAward
@@ -124,7 +118,6 @@ export default function PlayerArea({
         </div>
       </div>
 
-      {/* ÁREA DAS CARTAS */}
       <div className="flex flex-row items-center justify-between min-h-[7rem] md:min-h-[8rem] p-2 bg-desert-light dark:bg-gray-900 rounded border border-desert-dark dark:border-gray-700 w-full transition-colors relative overflow-hidden">
         <div className="flex flex-row items-center justify-start gap-1 sm:gap-2 flex-grow min-w-0 pr-1">
           <AnimatePresence>{renderHand()}</AnimatePresence>
@@ -135,23 +128,19 @@ export default function PlayerArea({
           )}
         </div>
 
-        {/* ÁREA DOS CAMELOS */}
         {!isOpponent && herdCount > 0 && (
           <div className="ml-1 sm:ml-auto pl-2 sm:pl-4 border-l-2 border-dashed border-gray-400 dark:border-gray-600 flex flex-col items-center justify-center transition-colors flex-shrink-0">
-            <div className="[&>*]:max-w-[45px] sm:[&>*]:max-w-none">
+            <div className="w-[50px] sm:w-[70px] md:w-[85px] flex-shrink-0">
               <Card type="camel" count={herdCount} />
             </div>
-
             <div className="mt-1 md:mt-2 flex items-center gap-0.5 md:gap-1">
               <button
                 onClick={() => onHerdSelect(0)}
                 disabled={selectedHerdCount === 0}
                 className={`bg-jaipur-red dark:bg-red-700 text-white rounded-full p-1 shadow-sm transition-colors touch-none ${selectedHerdCount === 0 ? "opacity-50 cursor-not-allowed" : "hover:opacity-80"}`}
-                title="Limpar Camelos"
               >
                 <FaTimes size={10} />
               </button>
-
               <div className="flex items-center bg-white dark:bg-gray-800 rounded-full shadow-sm border border-gray-300 dark:border-gray-600 text-[9px] md:text-[10px] transition-colors">
                 <button
                   onClick={() =>
@@ -181,7 +170,7 @@ export default function PlayerArea({
 
         {isOpponent && herdCount > 0 && (
           <div className="ml-1 sm:ml-auto pl-2 sm:pl-4 border-l-2 border-dashed border-gray-400 dark:border-gray-600 flex flex-col items-center justify-center transition-colors flex-shrink-0">
-            <div className="[&>*]:max-w-[35px] sm:[&>*]:max-w-none">
+            <div className="w-[40px] sm:w-[60px] md:w-[75px] flex-shrink-0">
               <Card type="camel" count={herdCount > 0 ? "?" : undefined} />
             </div>
           </div>
